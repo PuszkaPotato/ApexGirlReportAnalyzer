@@ -14,7 +14,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/openapi/v1.json", "v1");
     });
-
+    // Default route to swagger in development
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
