@@ -361,3 +361,21 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+###############################################################################
+# ApexGirl Report Analyzer - Custom Security Rules
+###############################################################################
+
+## User Secrets & Configuration
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+
+## Database Files
+*.db
+*.db-shm
+*.db-wal
+
+## Sensitive Keys
+*.key
