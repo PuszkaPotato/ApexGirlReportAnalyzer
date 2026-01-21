@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/.git/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+  </Folder>
   <Folder Name="/docs/">
     <File Path="database-schema.md" />
   </Folder>
