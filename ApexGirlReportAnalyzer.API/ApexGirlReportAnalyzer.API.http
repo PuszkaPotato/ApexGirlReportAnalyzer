@@ -1,0 +1,6 @@
+@ApexGirlReportAnalyzer.API_HostAddress = http://localhost:5057
+
+GET {{ApexGirlReportAnalyzer.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

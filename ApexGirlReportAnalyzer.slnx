@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="database-schema.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Contributing.md" />
+    <File Path="LICENSE.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="ApexGirlReportAnalyzer.API/ApexGirlReportAnalyzer.API.csproj" Id="a322e9f0-e9a9-4bcb-b6fb-6b6c1d285d99" />
+  <Project Path="ApexGirlReportAnalyzer.Core/ApexGirlReportAnalyzer.Core.csproj" Id="0282eca0-e18e-4a70-b7eb-600a812db72c" />
+  <Project Path="ApexGirlReportAnalyzer.Infrastructure/ApexGirlReportAnalyzer.Infrastructure.csproj" Id="75ff18e6-b17b-46f2-8035-c765f6004cdf" />
+  <Project Path="ApexGirlReportAnalyzer.Models/ApexGirlReportAnalyzer.Models.csproj" Id="beca2f14-05d1-4bc7-ac98-bc8f6fd90cc9" />
+</Solution>
