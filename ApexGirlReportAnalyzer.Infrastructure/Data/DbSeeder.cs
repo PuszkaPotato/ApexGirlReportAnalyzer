@@ -1,16 +1,24 @@
 ﻿using ApexGirlReportAnalyzer.Models.Entities;
 using ApexGirlReportAnalyzer.Models.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ApexGirlReportAnalyzer.Infrastructure.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(AppDbContext context)
+    // Returns the ID of the development test user if created or found, otherwise null.
+    public static async Task<Guid?> SeedAsync(AppDbContext context, ILogger? logger = null, bool isDevelopment = false)
     {
-        // Only seed if database is empty
+        // Only seed if database is empty, but always ensure dev test user exists in DEBUG
         if (context.Tiers.Any())
         {
-            return; // Already seeded
+            if (isDevelopment)
+            {
+            // If tiers already exist, still ensure the development test user is present and log its ID
+            return await EnsureTestUserAsync(context, logger);
+            }
+            return null; // Already seeded
         }
 
         // Create Tiers
@@ -106,8 +114,51 @@ public static class DbSeeder
         };
 
         context.ApiKeys.Add(testApiKey);
+        await context.SaveChangesAsync(); // Persist tiers, limits and api key so subsequent DB queries see them
+
+        if (isDevelopment)
+        {
+            // Create test user in development
+            return await EnsureTestUserAsync(context, logger);
+        }
 
         // Save everything
         await context.SaveChangesAsync();
+
+        // If we reached here in DEBUG and no test user was created/found above, return null.
+        return null;
+    }
+
+    // Add this private helper method to eliminate duplication
+    private static async Task<Guid?> EnsureTestUserAsync(AppDbContext context, ILogger? logger)
+    {
+        var existing = await context.Users.FirstOrDefaultAsync(u => u.DiscordId == "test_user");
+        if (existing != null)
+        {
+            logger?.LogInformation("Test user exists: ID = {Id}, DiscordId = {DiscordId}", existing.Id, existing.DiscordId);
+            Console.WriteLine($"Test user exists: ID = {existing.Id}, DiscordId = {existing.DiscordId}");
+            return existing.Id;
+        }
+
+        var freeTierEntity = await context.Tiers.FirstOrDefaultAsync(t => t.Name == "Free");
+        if (freeTierEntity != null)
+        {
+            var testUser = new User
+            {
+                Id = Guid.NewGuid(),
+                DiscordId = "test_user",
+                TierId = freeTierEntity.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            context.Users.Add(testUser);
+            await context.SaveChangesAsync();
+
+            logger?.LogInformation("Test user created: ID = {Id}, DiscordId = {DiscordId}", testUser.Id, testUser.DiscordId);
+            Console.WriteLine($"Test user created: ID = {testUser.Id}, DiscordId = {testUser.DiscordId}");
+            return testUser.Id;
+        }
+
+        return null;
     }
 }
