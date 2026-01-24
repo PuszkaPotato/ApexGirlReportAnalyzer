@@ -28,4 +28,8 @@
     <ProjectReference Include="..\ApexGirlReportAnalyzer.Models\ApexGirlReportAnalyzer.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Prompts\" />
+  </ItemGroup>
+
 </Project>
