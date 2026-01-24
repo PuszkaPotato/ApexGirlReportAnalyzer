@@ -36,6 +36,9 @@ public class AppDbContext : DbContext
         ConfigureBattleSide(modelBuilder);
         ConfigureAnalyticsEvent(modelBuilder);
         ConfigureErrorReport(modelBuilder);
+
+        modelBuilder.Entity<Upload>()
+        .HasIndex(u => new { u.UserId, u.Status, u.CreatedAt });
     }
 
     // Configuration methods (we'll fill these in next)
