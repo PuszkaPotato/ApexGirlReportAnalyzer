@@ -99,7 +99,7 @@ public class OpenAIService : IOpenAIService
 
     private object BuildRequest(string base64Image)
     {
-        var model = _configuration["OpenAI:Model"] ?? "gpt-4o";
+        var model = _configuration["OpenAI:Model"] ?? "gpt-4.1";
         var maxTokens = int.TryParse(_configuration["OpenAI:MaxTokens"], out var tokens) ? tokens : 1500;
 
         return new
@@ -134,50 +134,16 @@ public class OpenAIService : IOpenAIService
 
     private string GetPrompt()
     {
-        // We'll refine this prompt in the next session!
-        return @"
-        You are analyzing a battle report screenshot from the mobile game Apex Girl.
+        var promptPath = _configuration["OpenAI:PromptPath"] 
+            ?? Path.Combine(AppContext.BaseDirectory, "Prompts", "BattleAnalysisPrompt.txt");
 
-        Extract the following information and return it as valid JSON (and ONLY JSON, no other text):
-
+        if (!File.Exists(promptPath))
         {
-            ""battleType"": ""string (e.g., Parking War, Great Win, etc.)"",
-            ""battleDate"": ""ISO 8601 datetime from screenshot"",
-            ""player"": {
-            ""username"": ""string (username ONLY, without group tag)"",
-            ""groupTag"": ""string or null (e.g., CTS, ALTR - without brackets)"",
-            ""level"": ""integer or null"",
-            ""fanCount"": ""integer"",
-            ""lossCount"": ""integer"",
-            ""injuredCount"": ""integer"",
-            ""remainingCount"": ""integer"",
-            ""reinforceCount"": ""integer or null"",
-            ""sing"": ""integer"",
-            ""dance"": ""integer"",
-            ""activeSkill"": ""integer"",
-            ""basicAttackBonus"": ""integer (percentage as whole number, e.g., 172)"",
-            ""reduceBasicAttackDamage"": ""integer"",
-            ""skillBonus"": ""integer"",
-            ""skillReduction"": ""integer"",
-            ""extraDamage"": ""integer""
-            },
-            ""enemy"": {
-            // Same structure as player
-            }
+            _logger.LogError("Prompt file not found at: {PromptPath}", promptPath);
+            throw new FileNotFoundException($"Prompt file not found at: {promptPath}");
         }
 
-        IMPORTANT:
-        - Return ONLY valid JSON, no markdown, no explanations
-        - All numbers should be positive integers (no commas, no negative signs - e.g., 881400 not 881,400 or -20)
-        - Red text does NOT mean negative values - treat all stats as positive/absolute values
-        - Use null for missing values
-        - Be precise with numbers from the screenshot
-        - The player is on the LEFT side of the Battle Overview, the enemy is on the RIGHT side
-        - Username and groupTag are SEPARATE fields - do not concatenate them (e.g., username: ""QueenVee"", groupTag: ""CTS"", NOT username: ""CTSQueenVee"")
-        - groupTag should NOT include brackets - just the tag itself (e.g., ""CTS"" not ""[CTS]"")
-        - Carefully match each stat to its correct position - sing/dance are different from fan counts and losses
-
-        ";
+        return File.ReadAllText(promptPath);
     }
 
     private BattleReportResponse ParseBattleData(string aiResponse)
@@ -198,20 +164,104 @@ public class OpenAIService : IOpenAIService
         }
         jsonString = jsonString.Trim();
 
-        // Parse JSON
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
 
-        var battleData = JsonSerializer.Deserialize<BattleReportResponse>(jsonString, options);
-
-        if (battleData == null)
+        try
         {
-            throw new InvalidOperationException("Failed to parse battle data from AI response");
-        }
+            using var doc = JsonDocument.Parse(jsonString);
+            var root = doc.RootElement;
 
-        return battleData;
+            // Check if AI flagged this as invalid image FIRST
+            if (root.TryGetProperty("invalid", out var invalidEl) &&
+                invalidEl.ValueKind == JsonValueKind.True)
+            {
+                var reason = root.TryGetProperty("reason", out var reasonEl) &&
+                             reasonEl.ValueKind != JsonValueKind.Null
+                    ? reasonEl.GetString() ?? "Not a battle report screenshot"
+                    : "Not a battle report screenshot";
+
+                _logger.LogWarning("OpenAI flagged image as invalid: {Reason}", reason);
+
+                return new BattleReportResponse
+                {
+                    IsInvalid = true,
+                    InvalidReason = reason
+                };
+            }
+
+            // battleType
+            var battleType = root.TryGetProperty("battleType", out var btEl) && btEl.ValueKind != JsonValueKind.Null
+                ? btEl.GetString() ?? string.Empty
+                : string.Empty;
+
+            // battleDate: parse as flexible string to avoid strict DateTime deserialize errors
+            DateTime battleDateUtc = DateTime.UtcNow;
+            if (root.TryGetProperty("battleDate", out var bdEl) && bdEl.ValueKind != JsonValueKind.Null)
+            {
+                var bdStr = bdEl.GetString();
+                if (!string.IsNullOrWhiteSpace(bdStr))
+                {
+                    // Try general parse with invariant culture and assume/adjust to UTC
+                    if (!DateTime.TryParse(bdStr, System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                        out var parsed))
+                    {
+                        // Try round-trip formats
+                        var formats = new[]
+                        {
+                            "o", // round-trip
+                            "yyyy-MM-ddTHH:mm:ssK",
+                            "yyyy-MM-ddTHH:mm:ssZ",
+                            "yyyy-MM-dd",
+                            "MM/dd/yyyy",
+                            "dd MMM yyyy",
+                            "dd-MM-yyyy"
+                        };
+
+                        if (!DateTime.TryParseExact(bdStr, formats, System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                            out parsed))
+                        {
+                            _logger.LogWarning("Unable to parse battleDate from AI response: {BattleDateString}. Using UtcNow.", bdStr);
+                            parsed = DateTime.UtcNow;
+                        }
+                    }
+                    // Ensure UTC kind
+                    battleDateUtc = DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+                }
+            }
+
+            // player and enemy: deserialize their subtrees
+            var player = root.TryGetProperty("player", out var pEl) && pEl.ValueKind != JsonValueKind.Null
+                ? JsonSerializer.Deserialize<BattleSideDto>(pEl.GetRawText(), options) ?? new BattleSideDto()
+                : new BattleSideDto();
+
+            var enemy = root.TryGetProperty("enemy", out var eEl) && eEl.ValueKind != JsonValueKind.Null
+                ? JsonSerializer.Deserialize<BattleSideDto>(eEl.GetRawText(), options) ?? new BattleSideDto()
+                : new BattleSideDto();
+
+
+            return new BattleReportResponse
+            {
+                BattleType = battleType,
+                BattleDate = battleDateUtc,
+                Player = player,
+                Enemy = enemy
+            };
+        }
+        catch (JsonException jex)
+        {
+            _logger.LogError(jex, "Failed to parse AI JSON response. Raw response: {Response}", jsonString);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error parsing AI response. Raw response: {Response}", jsonString);
+            throw;
+        }
     }
 
     private decimal CalculateCost(Usage usage)
