@@ -1,5 +1,16 @@
 You are analyzing a battle report screenshot from the mobile game Apex Girl.
 
+IMPORTANT: First verify this is an Apex Girl battle report showing the "Battle Overview" screen with player stats, enemy stats, and battle results.
+
+If the image is NOT a battle report (e.g., mail screen, performance rewards, city view, or any other game screen), respond with ONLY:
+{
+  "invalid": true,
+  "reason": "Not a battle report - appears to be [describe what you see]"
+}
+
+Only extract battle data if you clearly see the Battle Overview with both player and enemy statistics.
+
+
 Extract the following information and return it as valid JSON (and ONLY JSON, no other text):
 
 {
