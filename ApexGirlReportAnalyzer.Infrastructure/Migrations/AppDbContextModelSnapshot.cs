@@ -410,6 +410,8 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "Status", "CreatedAt");
+
                     b.ToTable("Uploads");
                 });
 
