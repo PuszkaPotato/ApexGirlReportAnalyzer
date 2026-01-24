@@ -1,10 +1,16 @@
+using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
+using ApexGirlReportAnalyzer.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add DbContext with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Defaultconnection")));
+
+// Add HttpClient for OpenAI service
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 
 // Add services to the container.
 builder.Services.AddControllers();
