@@ -1,23 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace ApexGirlReportAnalyzer.API.Controllers
+namespace ApexGirlReportAnalyzer.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class StatusController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class StatusController : ControllerBase
+    /// <summary>
+    /// Health check endpoint
+    /// </summary>
+    [HttpGet("health")]
+    public IActionResult Health()
     {
-        /// <summary>
-        /// Health check endpoint
-        /// </summary>
-        [HttpGet("health")]
-        public IActionResult Health()
+        return Ok(new
         {
-            return Ok(new
-            {
-                success = true,
-                service = "StatusController",
-                timestamp = DateTime.UtcNow
-            });
-        }
+            success = true,
+            service = "StatusController",
+            timestamp = DateTime.UtcNow
+        });
     }
 }
