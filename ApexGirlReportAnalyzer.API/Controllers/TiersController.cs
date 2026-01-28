@@ -7,15 +7,16 @@ namespace ApexGirlReportAnalyzer.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TiersController(AppDbContext context) : ControllerBase
+public class TiersController(AppDbContext context, ILogger<TiersController> logger) : ControllerBase
 {
     private readonly AppDbContext _context = context;
+    private readonly ILogger<TiersController> _logger = logger;
 
     /// <summary>
     /// Get all tiers with their limits
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<TierResponse>), 200)]
+    [ProducesResponseType(typeof(List<TierResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTiers()
     {
         var tiers = await _context.Tiers

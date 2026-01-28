@@ -53,8 +53,9 @@ public class UploadService : IUploadService
                 return CreateErrorResponse("User not found");
             }
 
-            // Step 2: Validate quota using UserService
-            var quotaValidation = await _userService.ValidateQuotaAsync(userId);
+            // Step 2: Validate quota using UserService (both user and server quotas)
+            var parsedServerId = ParseDiscordServerId(discordServerId, userId);
+            var quotaValidation = await _userService.ValidateQuotaAsync(userId, parsedServerId);
             if (!quotaValidation.IsValid)
             {
                 _logger.LogWarning("User {UserId} quota validation failed: {ErrorMessage}",
@@ -76,7 +77,7 @@ public class UploadService : IUploadService
             }
 
             // Step 5: Create Upload record with PENDING status
-            upload = await CreatePendingUploadAsync(userId, imageHash, discordServerId);
+            upload = await CreatePendingUploadAsync(userId, imageHash, parsedServerId);
 
             // Step 6: Call OpenAI service
             var battleData = await AnalyzeWithOpenAIAsync(upload, base64Image);
@@ -176,7 +177,7 @@ public class UploadService : IUploadService
     private async Task<Upload> CreatePendingUploadAsync(
         Guid userId,
         string imageHash,
-        string? discordServerId)
+        Guid? discordServerId)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
         var promptVersion = _configuration["OpenAI:PromptVersion"] ?? "1.0";
@@ -186,7 +187,7 @@ public class UploadService : IUploadService
             Id = Guid.NewGuid(),
             ImageHash = imageHash,
             UserId = userId,
-            DiscordServerId = ParseDiscordServerId(discordServerId, userId),
+            DiscordServerId = discordServerId,
             Status = UploadStatus.Pending,
             OpenAiModel = model,
             PromptVersion = promptVersion,

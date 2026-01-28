@@ -1,4 +1,4 @@
-﻿using ApexGirlReportAnalyzer.Core.Interfaces;
+using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Enums;
@@ -7,20 +7,13 @@ using Microsoft.Extensions.Logging;
 
 namespace ApexGirlReportAnalyzer.Infrastructure.Services;
 
-public class UserService : IUserService
+public class UserService(AppDbContext context, ILogger<UserService> logger) : IUserService
 {
-    private readonly AppDbContext _context;
-    private readonly ILogger<UserService> _logger;
-
-    public UserService(AppDbContext context, ILogger<UserService> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly AppDbContext _context = context;
+    private readonly ILogger<UserService> _logger = logger;
 
     public async Task<QuotaInfo> GetRemainingQuotaAsync(Guid userId)
     {
-        // Load user with tier and limits
         var user = await _context.Users
             .Include(u => u.Tier)
                 .ThenInclude(t => t.TierLimits)
@@ -32,7 +25,6 @@ public class UserService : IUserService
             throw new KeyNotFoundException($"User with ID {userId} not found");
         }
 
-        // Get tier limits for User scope (not Server scope)
         var userLimit = user.Tier.TierLimits
             .FirstOrDefault(tl => tl.Scope == TierScope.User);
 
@@ -47,24 +39,7 @@ public class UserService : IUserService
             };
         }
 
-        // Calculate date ranges
-        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
-        var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        // Count successful uploads (don't count failed or pending)
-        var dailyUploads = await _context.Uploads
-            .Where(u => u.UserId == userId
-                && u.Status == UploadStatus.Success
-                && u.CreatedAt >= today
-                && u.DeletedAt == null)
-            .CountAsync();
-
-        var monthlyUploads = await _context.Uploads
-            .Where(u => u.UserId == userId
-                && u.Status == UploadStatus.Success
-                && u.CreatedAt >= startOfMonth
-                && u.DeletedAt == null)
-            .CountAsync();
+        var (dailyUploads, monthlyUploads) = await GetUploadCountsAsync(userId);
 
         _logger.LogInformation(
             "User {UserId} quota check - Daily: {Daily}/{DailyLimit}, Monthly: {Monthly}/{MonthlyLimit}",
@@ -80,8 +55,14 @@ public class UserService : IUserService
 
     public async Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId)
     {
+        return await ValidateQuotaAsync(userId, null);
+    }
+
+    public async Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, Guid? discordServerId)
+    {
         var quota = await GetRemainingQuotaAsync(userId);
 
+        // Check user quota first
         if (quota.DailyRemaining <= 0)
         {
             return new QuotaValidationResult
@@ -102,6 +83,19 @@ public class UserService : IUserService
             };
         }
 
+        // Check server quota if discordServerId is provided
+        if (discordServerId.HasValue)
+        {
+            var serverQuotaResult = await ValidateServerQuotaAsync(discordServerId.Value, quota);
+            if (!serverQuotaResult.IsValid)
+            {
+                return serverQuotaResult;
+            }
+
+            // Merge server quota info into response
+            quota = serverQuotaResult.QuotaInfo;
+        }
+
         return new QuotaValidationResult
         {
             IsValid = true,
@@ -113,5 +107,132 @@ public class UserService : IUserService
     {
         var quota = await GetRemainingQuotaAsync(userId);
         return quota.DailyRemaining > 0 && quota.MonthlyRemaining > 0;
+    }
+
+    private async Task<QuotaValidationResult> ValidateServerQuotaAsync(Guid discordServerId, QuotaInfo userQuota)
+    {
+        var server = await _context.DiscordServers
+            .Include(s => s.Tier)
+                .ThenInclude(t => t!.TierLimits)
+            .FirstOrDefaultAsync(s => s.Id == discordServerId && s.DeletedAt == null);
+
+        if (server == null)
+        {
+            _logger.LogWarning("Discord server {ServerId} not found or deleted", discordServerId);
+            // Server not found - allow upload with just user quota
+            return new QuotaValidationResult
+            {
+                IsValid = true,
+                QuotaInfo = userQuota
+            };
+        }
+
+        // If server has no tier assigned, use default behavior (no server limits)
+        if (server.Tier == null)
+        {
+            _logger.LogInformation("Discord server {ServerId} has no tier assigned, skipping server quota check", discordServerId);
+            return new QuotaValidationResult
+            {
+                IsValid = true,
+                QuotaInfo = userQuota
+            };
+        }
+
+        var serverLimit = server.Tier.TierLimits
+            .FirstOrDefault(tl => tl.Scope == TierScope.Server);
+
+        if (serverLimit == null)
+        {
+            _logger.LogWarning("No server tier limits found for server {ServerId}, tier {TierId}", discordServerId, server.ServerTierId);
+            return new QuotaValidationResult
+            {
+                IsValid = true,
+                QuotaInfo = userQuota
+            };
+        }
+
+        var (dailyUploads, monthlyUploads) = await GetServerUploadCountsAsync(discordServerId);
+
+        _logger.LogInformation(
+            "Server {ServerId} quota check - Daily: {Daily}/{DailyLimit}, Monthly: {Monthly}/{MonthlyLimit}",
+            discordServerId, dailyUploads, serverLimit.DailyRequestLimit, monthlyUploads, serverLimit.MonthlyRequestLimit);
+
+        var serverDailyRemaining = Math.Max(0, serverLimit.DailyRequestLimit - dailyUploads);
+        var serverMonthlyRemaining = Math.Max(0, serverLimit.MonthlyRequestLimit - monthlyUploads);
+
+        // Update quota info with server data
+        userQuota.ServerDailyRemaining = serverDailyRemaining;
+        userQuota.ServerMonthlyRemaining = serverMonthlyRemaining;
+        userQuota.ServerTierName = server.Tier.Name;
+
+        if (serverDailyRemaining <= 0)
+        {
+            return new QuotaValidationResult
+            {
+                IsValid = false,
+                QuotaInfo = userQuota,
+                ErrorMessage = "This Discord server's daily upload quota has been exceeded. Please try again tomorrow."
+            };
+        }
+
+        if (serverMonthlyRemaining <= 0)
+        {
+            return new QuotaValidationResult
+            {
+                IsValid = false,
+                QuotaInfo = userQuota,
+                ErrorMessage = "This Discord server's monthly upload quota has been exceeded. Please contact the server admin to upgrade the tier."
+            };
+        }
+
+        return new QuotaValidationResult
+        {
+            IsValid = true,
+            QuotaInfo = userQuota
+        };
+    }
+
+    private async Task<(int daily, int monthly)> GetUploadCountsAsync(Guid userId)
+    {
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var dailyUploads = await _context.Uploads
+            .Where(u => u.UserId == userId
+                && u.Status == UploadStatus.Success
+                && u.CreatedAt >= today
+                && u.DeletedAt == null)
+            .CountAsync();
+
+        var monthlyUploads = await _context.Uploads
+            .Where(u => u.UserId == userId
+                && u.Status == UploadStatus.Success
+                && u.CreatedAt >= startOfMonth
+                && u.DeletedAt == null)
+            .CountAsync();
+
+        return (dailyUploads, monthlyUploads);
+    }
+
+    private async Task<(int daily, int monthly)> GetServerUploadCountsAsync(Guid discordServerId)
+    {
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var dailyUploads = await _context.Uploads
+            .Where(u => u.DiscordServerId == discordServerId
+                && u.Status == UploadStatus.Success
+                && u.CreatedAt >= today
+                && u.DeletedAt == null)
+            .CountAsync();
+
+        var monthlyUploads = await _context.Uploads
+            .Where(u => u.DiscordServerId == discordServerId
+                && u.Status == UploadStatus.Success
+                && u.CreatedAt >= startOfMonth
+                && u.DeletedAt == null)
+            .CountAsync();
+
+        return (dailyUploads, monthlyUploads);
     }
 }

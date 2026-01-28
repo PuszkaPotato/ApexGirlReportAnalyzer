@@ -66,4 +66,9 @@ public class QuotaInfo
     public int DailyRemaining { get; set; }
     public int MonthlyRemaining { get; set; }
     public string TierName { get; set; } = string.Empty;
+
+    // Server quota (only populated when uploading via Discord server)
+    public int? ServerDailyRemaining { get; set; }
+    public int? ServerMonthlyRemaining { get; set; }
+    public string? ServerTierName { get; set; }
 }
