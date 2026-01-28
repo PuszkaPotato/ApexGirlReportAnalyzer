@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DbContext with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Defaultconnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add HttpClient for OpenAI service
 builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
