@@ -1,6 +1,7 @@
-﻿using System.Security.Cryptography;
-using ApexGirlReportAnalyzer.Core.Interfaces;
+﻿using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
+using ApexGirlReportAnalyzer.Infrastructure.Helpers;
+using ApexGirlReportAnalyzer.Infrastructure.Mappers;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Entities;
 using ApexGirlReportAnalyzer.Models.Enums;
@@ -66,7 +67,7 @@ public class UploadService : IUploadService
             }
 
             // Step 3: Calculate image hash for deduplication
-            var imageHash = CalculateImageHash(base64Image);
+            var imageHash = HashHelper.CalculateSha256(base64Image);
             _logger.LogInformation("Image hash calculated: {ImageHash}", imageHash);
 
             // Step 4: Check for duplicate
@@ -298,8 +299,8 @@ public class UploadService : IUploadService
         _context.BattleReports.Add(battleReport);
 
         // Create BattleSides (Player and Enemy)
-        var playerSide = CreateBattleSide(battleReport.Id, BattleSideType.Player, battleData.Player, playerInGameId);
-        var enemySide = CreateBattleSide(battleReport.Id, BattleSideType.Enemy, battleData.Enemy, enemyInGameId);
+        var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId);
+        var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId);
 
         _context.BattleSides.Add(playerSide);
         _context.BattleSides.Add(enemySide);
@@ -315,7 +316,7 @@ public class UploadService : IUploadService
     /// <summary>
     /// Parse extraction version from prompt version string
     /// </summary>
-    private int ParseExtractionVersion(string promptVersion)
+    private static int ParseExtractionVersion(string promptVersion)
     {
         if (string.IsNullOrEmpty(promptVersion))
         {
@@ -329,48 +330,6 @@ public class UploadService : IUploadService
         }
 
         return 1;
-    }
-
-    /// <summary>
-    /// Calculate SHA-256 hash of base64 image for deduplication
-    /// </summary>
-    private string CalculateImageHash(string base64Image)
-    {
-        var imageBytes = Convert.FromBase64String(base64Image);
-        using var sha256 = SHA256.Create();
-        var hashBytes = sha256.ComputeHash(imageBytes);
-        return Convert.ToHexString(hashBytes).ToLowerInvariant();
-    }
-
-    /// <summary>
-    /// Create a BattleSide entity from DTO
-    /// </summary>
-    private BattleSide CreateBattleSide(Guid battleReportId, BattleSideType sideType, BattleSideDto dto, string? manualInGameId = null)
-    {
-        return new BattleSide
-        {
-            Id = Guid.NewGuid(),
-            BattleReportId = battleReportId,
-            Side = sideType,
-            Username = dto.Username ?? string.Empty,
-            InGamePlayerId = manualInGameId ?? dto.InGamePlayerId,
-            GroupTag = dto.GroupTag,
-            Level = dto.Level,
-            FanCount = dto.FanCount,
-            LossCount = dto.LossCount,
-            InjuredCount = dto.InjuredCount,
-            RemainingCount = dto.RemainingCount,
-            ReinforceCount = dto.ReinforceCount,
-            Sing = dto.Sing,
-            Dance = dto.Dance,
-            ActiveSkill = dto.ActiveSkill,
-            BasicAttackBonus = dto.BasicAttackBonus,
-            ReduceBasicAttackDamage = dto.ReduceBasicAttackDamage,
-            SkillBonus = dto.SkillBonus,
-            SkillReduction = dto.SkillReduction,
-            ExtraDamage = dto.ExtraDamage,
-            CreatedAt = DateTime.UtcNow
-        };
     }
 
     /// <summary>
@@ -388,50 +347,7 @@ public class UploadService : IUploadService
             throw new InvalidOperationException($"BattleReport {battleReportId} not found");
         }
 
-        var playerSide = battleReport.BattleSides.FirstOrDefault(bs => bs.Side == BattleSideType.Player);
-        var enemySide = battleReport.BattleSides.FirstOrDefault(bs => bs.Side == BattleSideType.Enemy);
-
-        return new BattleReportResponse
-        {
-            BattleType = battleReport.BattleType,
-            BattleDate = battleReport.BattleDate,
-            Player = MapToDto(playerSide),
-            Enemy = MapToDto(enemySide),
-            TokensUsed = battleReport.Upload.TokenEstimate,
-            EstimatedCost = battleReport.Upload.EstimatedCostEuro
-        };
-    }
-
-    /// <summary>
-    /// Map BattleSide entity to DTO
-    /// </summary>
-    private BattleSideDto MapToDto(BattleSide? side)
-    {
-        if (side == null)
-        {
-            return new BattleSideDto();
-        }
-
-        return new BattleSideDto
-        {
-            Username = side.Username,
-            InGamePlayerId = side.InGamePlayerId,
-            GroupTag = side.GroupTag,
-            Level = side.Level,
-            FanCount = side.FanCount,
-            LossCount = side.LossCount,
-            InjuredCount = side.InjuredCount,
-            RemainingCount = side.RemainingCount,
-            ReinforceCount = side.ReinforceCount,
-            Sing = side.Sing,
-            Dance = side.Dance,
-            ActiveSkill = side.ActiveSkill,
-            BasicAttackBonus = side.BasicAttackBonus,
-            ReduceBasicAttackDamage = side.ReduceBasicAttackDamage,
-            SkillBonus = side.SkillBonus,
-            SkillReduction = side.SkillReduction,
-            ExtraDamage = side.ExtraDamage
-        };
+        return BattleReportMapper.ToDto(battleReport, battleReport.Upload);
     }
 
     /// <summary>
