@@ -4,6 +4,12 @@
     <File Path=".gitignore" />
   </Folder>
   <Folder Name="/docs/">
+    <File Path=".claude/CURRENT_STATE.md" />
+    <File Path=".claude/docs/code-standards.md" />
+    <File Path=".claude/docs/learning-progress.md" />
+    <File Path=".claude/docs/roadmap.md" />
+    <File Path=".claude/docs/tech-decisions.md" />
+    <File Path="CLAUDE.md" />
     <File Path="database-schema.md" />
   </Folder>
   <Folder Name="/Solution Items/">
