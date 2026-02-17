@@ -1,9 +1,11 @@
 ﻿using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class UserController(IUserService userService, ILogger<UserController> logger) : ControllerBase

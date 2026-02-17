@@ -1,10 +1,12 @@
 ﻿using ApexGirlReportAnalyzer.Infrastructure.Data;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class TiersController(AppDbContext context, ILogger<TiersController> logger) : ControllerBase
