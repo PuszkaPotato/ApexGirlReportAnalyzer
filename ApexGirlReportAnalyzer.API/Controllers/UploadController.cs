@@ -28,6 +28,8 @@ public class UploadController : ControllerBase
     /// <param name="discordServerId">Optional: Discord server ID if uploaded via bot</param>
     /// <param name="playerInGameId">Optional: Player's in-game ID</param>
     /// <param name="enemyInGameId">Optional: Enemy's in-game ID</param>
+    /// <param name="discordChannelId">Optional: Discord channel ID where screenshot was posted</param>
+    /// <param name="discordMessageId">Optional: Discord message ID of the screenshot</param>
     /// <returns>Analysis results or error</returns>
     [HttpPost]
     [ProducesResponseType(typeof(UploadResponse), StatusCodes.Status200OK)]
@@ -39,6 +41,8 @@ public class UploadController : ControllerBase
         [FromForm] string? discordServerId = null,
         [FromForm] string? playerInGameId = null,
         [FromForm] string? enemyInGameId = null,
+        [FromForm] string? discordChannelId = null,
+        [FromForm] string? discordMessageId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -67,7 +71,9 @@ public class UploadController : ControllerBase
                 image.FileName,
                 discordServerId,
                 playerInGameId,
-                enemyInGameId);
+                enemyInGameId,
+                discordChannelId,
+                discordMessageId);
 
             // Return appropriate status code
             if (result.Success)

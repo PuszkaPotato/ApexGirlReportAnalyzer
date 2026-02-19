@@ -21,5 +21,7 @@ public interface IUploadService
         string? originalFileName = null,
         string? discordServerId = null,
         string? playerInGameId = null,
-        string? enemyInGameId = null);
+        string? enemyInGameId = null,
+        string? discordChannelId = null,
+        string? discordMessageId = null);
 }

@@ -39,7 +39,9 @@ public class UploadService : IUploadService
         string? originalFileName = null,
         string? discordServerId = null,
         string? playerInGameId = null,
-        string? enemyInGameId = null)
+        string? enemyInGameId = null,
+        string? discordChannelId = null,
+        string? discordMessageId = null)
     {
         Upload? upload = null;
 
@@ -78,7 +80,7 @@ public class UploadService : IUploadService
             }
 
             // Step 5: Create Upload record with PENDING status
-            upload = await CreatePendingUploadAsync(userId, imageHash, parsedServerId);
+            upload = await CreatePendingUploadAsync(userId, imageHash, parsedServerId, discordChannelId, discordMessageId);
 
             // Step 6: Call OpenAI service
             var battleData = await AnalyzeWithOpenAIAsync(upload, base64Image);
@@ -178,7 +180,9 @@ public class UploadService : IUploadService
     private async Task<Upload> CreatePendingUploadAsync(
         Guid userId,
         string imageHash,
-        Guid? discordServerId)
+        Guid? discordServerId,
+        string? discordChannelId = null,
+        string? discordMessageId = null)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
         var promptVersion = _configuration["OpenAI:PromptVersion"] ?? "1.0";
@@ -189,6 +193,8 @@ public class UploadService : IUploadService
             ImageHash = imageHash,
             UserId = userId,
             DiscordServerId = discordServerId,
+            DiscordChannelId = discordChannelId,
+            DiscordMessageId = discordMessageId,
             Status = UploadStatus.Pending,
             OpenAiModel = model,
             PromptVersion = promptVersion,
