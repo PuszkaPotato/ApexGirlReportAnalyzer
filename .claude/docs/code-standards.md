@@ -277,6 +277,36 @@ Models → (no dependencies)
 
 ---
 
+## Mappers
+
+Entity → DTO mapping is extracted into static mapper classes in `Infrastructure/Mappers/`:
+
+```csharp
+public static class UserMapper
+{
+    public static UserResponse ToDto(User user)
+    {
+        if (user == null) throw new ArgumentNullException(nameof(user));
+
+        return new UserResponse
+        {
+            Id = user.Id,
+            TierName = user.Tier?.Name,
+            // ...
+        };
+    }
+}
+```
+
+**Rules:**
+- One mapper class per entity
+- Static class with static methods
+- Null guard with `ArgumentNullException` (not silent empty return)
+- Named `ToDto` for entity → DTO, `ToEntity` for the reverse if needed
+- Apply the **boy scout rule**: extract inline mapping to a mapper when you touch a file
+
+---
+
 ## Known Inconsistencies to Resolve
 
 1. **Entity namespaces:** `Upload.cs` uses braces `namespace X { }`, newer files use file-scoped `namespace X;`
@@ -284,3 +314,7 @@ Models → (no dependencies)
 
 2. **Constructor style:** Some controllers still use primary constructors
    - **Standard:** Use traditional constructors everywhere for consistency and debuggability
+
+3. **Inline entity→DTO mapping:** Older services may map entities to DTOs inline instead of using a mapper class
+   - **Standard:** Use mapper classes in `Infrastructure/Mappers/`
+   - **Action:** Refactor inline mapping when touching those files (boy scout rule), not as a big-bang pass
