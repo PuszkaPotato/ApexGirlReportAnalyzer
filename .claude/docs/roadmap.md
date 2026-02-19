@@ -61,62 +61,56 @@ This document tracks project phases, timeline, and progress.
 
 ---
 
-## Phase 1.5: Documentation & Reflection - IN PROGRESS
+## Phase 1.5: Documentation & Reflection - COMPLETE
 
 **Duration:** 1-2 days (Jan 25-26, 2026)
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 
 **Tasks:**
 - Document technical decisions
 - Update learning objectives
 - Capture lessons learned
-- Sunday exam to solidify understanding
 
 ---
 
-## Phase 2: Testing & Quality - NEXT
+## Phase 2: Testing & Quality - SKIPPED (deferred)
 
 **Original Estimate:** 2 weeks (15-20 hours)
-**Revised Estimate:** 1 week (10-15 hours)
-**Reasoning:** Clean code is easier to test, might go faster
-**Goal:** 70%+ test coverage
-
-**Deliverables:**
-- xUnit test project setup
-- Unit tests for UserService (quota calculations)
-- Unit tests for UploadService (mocking OpenAI)
-- Integration tests for database operations
-- Moq for mocking dependencies
+**Status:** DEFERRED — decided to build Discord bot first, add tests later
 
 ---
 
-## Phase 2.5: API Expansion - After Testing
+## Phase 2.5: API Expansion - COMPLETE
 
 **Estimate:** 1 week (8-10 hours)
-**Goal:** Build endpoints Discord bot will need
+**Status:** COMPLETE
 
 **Deliverables:**
-- GET /api/reports - List user's reports
-- GET /api/reports/{id} - Retrieve specific report
-- User stats endpoints
-- Error reporting endpoint
-
-**Why:** Build with tests BEFORE Discord bot complexity
+- BattleReport query endpoint with filtering + pagination
+- BattleReport by ID endpoint
+- API key authentication (handler, Swagger integration, CLI key generation)
+- Code standards established
+- Shared code extracted (BattleReportMapper, HashHelper)
+- Discord bot API endpoints (server config, user get-or-create)
 
 ---
 
-## Phase 3: Discord Bot - After API Expansion
+## Phase 3: Discord Bot - IN PROGRESS
 
-**Estimate:** 3 weeks (20-25 hours) - Keep original estimate
-**Reasoning:** Unknown territory, don't rush
+**Estimate:** 3 weeks (20-25 hours)
+**Status:** IN PROGRESS — API-side prep complete, bot project next
 **Goal:** Real users can interact via Discord
 
 **Deliverables:**
-- Working Discord bot
-- /analyze slash command
-- /stats slash command
-- Auto-user creation from Discord
-- Deploy bot for alpha testing
+- API-side endpoints for bot (server config, user get-or-create) ✓
+- Bot project scaffold (Worker Service + Discord.Net)
+- /setup slash command (configure upload channel)
+- Screenshot listener (core feature — image → API → embed reply)
+- /reports slash command (query battle reports)
+- Error reporting to dev channel
+- Polish (caching, rate limiting, graceful shutdown)
+
+**Detailed plan:** See `.claude/docs/discord-bot-plan.md`
 
 ---
 
@@ -181,10 +175,10 @@ This document tracks project phases, timeline, and progress.
 | Phase | Estimated | Actual | Status |
 |-------|-----------|--------|--------|
 | Phase 1: Foundation | 3 weeks | 5 days | COMPLETE |
-| Phase 1.5: Documentation | 2 days | - | IN PROGRESS |
-| Phase 2: Testing | 1 week | - | NEXT |
-| Phase 2.5: API Expansion | 1 week | - | UPCOMING |
-| Phase 3: Discord Bot | 3 weeks | - | UPCOMING |
+| Phase 1.5: Documentation | 2 days | ~2 days | COMPLETE |
+| Phase 2: Testing | 1 week | - | DEFERRED |
+| Phase 2.5: API Expansion | 1 week | ~3 sessions | COMPLETE |
+| Phase 3: Discord Bot | 3 weeks | - | IN PROGRESS |
 | Phase 4: Analytics | 2 weeks | - | UPCOMING |
 | Phase 5: Deployment | 2 weeks | - | UPCOMING |
 

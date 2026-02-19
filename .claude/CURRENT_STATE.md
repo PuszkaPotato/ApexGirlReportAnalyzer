@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** February 17, 2026
-**Phase:** 2.5 (API Expansion) - COMPLETE
-**Status:** Authentication complete, ready for Discord Bot integration
+**Last Updated:** February 19, 2026
+**Phase:** 3 (Discord Bot) - IN PROGRESS
+**Status:** API-side prep partially done (kept plumbing, reverted services/DTOs/controllers for Veronica to build)
 
 ---
 
@@ -54,20 +54,29 @@
 
 ---
 
-## Recent Session Accomplishments (Feb 17)
+## Recent Session Accomplishments (Feb 19)
 
-### CLI API Key Generation (NEW)
-- Added `--generate-apikey` CLI command to `Program.cs`
-- Usage: `dotnet run --project ApexGirlReportAnalyzer.API -- --generate-apikey --name "Key Name" [--scope admin] [--expires-in-days 365]`
-- Key format: `agra_` prefix + 43-char base64url (32 random bytes)
-- Saves to DB, prints key once, exits without starting web server
-- Completes the authentication pipeline: entity → auth handler → Swagger integration → dev seed key → **key generation**
+### Partial revert of Claude's API-side prep (Feb 19)
+Claude had auto-implemented Phase 3.1 API-side prep. Reverted most code for Veronica to build herself.
 
-### Previous Session (Feb 16)
-- Established code standards in `.claude/docs/code-standards.md`
+**Kept (plumbing/entity changes):**
+- `DiscordServer.cs` — 3 new fields: `UploadChannelId`, `AllowedRoleId`, `LogChannelId`
+- Upload passthrough — `discordChannelId`/`discordMessageId` params through UploadController → IUploadService → UploadService
+- **Migration NOT yet created** — need to run `dotnet ef migrations add AddDiscordServerBotFields ...`
+
+**Reverted (for Veronica to build):**
+- DTOs: `DiscordServerConfigRequest/Response`, `GetOrCreateUserRequest`, `UserResponse`
+- Service: `IDiscordServerService` + `DiscordServerService` (interface + implementation)
+- Controller: `DiscordServerController`
+- UserService: `GetOrCreateByDiscordIdAsync` method + `IUserService` addition
+- UserController: `get-or-create` endpoint
+- Program.cs: DI registration for DiscordServerService
+
+### Previous Sessions
+- CLI API Key Generation (`--generate-apikey` command)
+- Code standards established
 - Extracted shared code: `BattleReportMapper`, `HashHelper`
-- Built `BattleReportService` and `BattleReportController` with filtering + pagination
-- Added `BattleReportListResponse` and `BattleReportFilterInfo` DTOs
+- Built `BattleReportService` and `BattleReportController`
 
 ---
 
@@ -75,14 +84,15 @@
 
 ### Not Implemented
 - **Testing** - No unit or integration tests
-- **Discord Bot** - No bot yet (Phase 3)
+- **Discord Bot API-side prep** - Entity fields added, upload passthrough done; DTOs, services, controllers still needed
+- **EF Migration** - DiscordServer entity fields added but migration not yet generated
+- **Discord Bot project** - Bot project not yet created
 - **Analytics Endpoints** - Stats and aggregations
 - **Admin Features** - No admin panel
 - **Error Reporting** - Users can't report bad extractions
 - **Deployment** - Not hosted anywhere (local only)
 
 ### Known Limitations
-- Manual user creation (must seed in database)
 - No rate limiting beyond quota system
 - No caching
 
@@ -111,12 +121,16 @@ See `.claude/docs/code-standards.md`:
 2. ~~Generate API keys~~ ✓
 3. ~~Dev seed key~~ ✓
 
-### Phase 3: Discord Bot
-1. Create Discord bot application
-2. Implement /analyze command
-3. Implement /stats command
-4. Auto-create users from Discord
-5. Deploy bot for alpha testing
+### Phase 3: Discord Bot — Remaining Steps
+1. API-side preparation: ~~entity fields~~ ✓, ~~upload passthrough~~ ✓ — **DTOs, services, controllers still TODO**
+2. **Generate EF migration** for DiscordServer bot fields
+3. **Create Bot project** (`dotnet new worker`, add to solution, NuGet packages)
+4. **Bot scaffold** — Configuration classes, ApiClient, DiscordBotService, Program.cs
+5. **/setup slash command** — Configure upload channel + allowed role
+6. **Screenshot listener** — Core feature: listen for images, upload to API, reply with embed
+7. **/reports slash command** — Query battle reports from Discord
+8. **Error reporting** — Send errors to dev channel
+9. **Polish** — Caching, rate limiting, graceful shutdown, logging
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish
@@ -130,5 +144,5 @@ See `.claude/docs/code-standards.md`:
 **Developer:** Veronica
 **Purpose:** Portfolio + Real Use (gaming group)
 **Timeline:** January 2026 - March 2026 (estimated)
-**Current Phase:** 2.5 Complete - Authentication done, ready for Phase 3
-**Next Milestone:** Discord Bot
+**Current Phase:** 3 In Progress - API-side prep partially done
+**Next Milestone:** Build Discord DTOs/services/controllers, then EF migration, then Bot project
