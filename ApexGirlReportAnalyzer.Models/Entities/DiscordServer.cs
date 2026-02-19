@@ -7,9 +7,14 @@ namespace ApexGirlReportAnalyzer.Models.Entities
         // Regular properties (columns in database)
         public string DiscordServerId { get; set; } = string.Empty;
         public string OwnerDiscordId { get; set; } = string.Empty;
-        public string ModeratorRoleIds { get; set; } = "[]"; // JSON array stored as string
         public PrivacyScope DefaultReportPrivacy { get; set; } = PrivacyScope.Public;
         public DateTime? DeletedAt { get; set; } // Soft delete
+        public DateTime? UpdatedAt { get; set; }
+
+        // Bot configuration
+        public string? UploadChannelId { get; set; }
+        public string? AllowedRoleId { get; set; }
+        public string? LogChannelId { get; set; }
 
         // Foreign Key (nullable - server might not have tier!)
         public Guid? ServerTierId { get; set; }

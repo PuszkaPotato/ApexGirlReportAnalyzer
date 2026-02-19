@@ -3,6 +3,7 @@
 public class Tier : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
+    public bool IsDefault { get; set; } = false; // Indicates if this is the default tier assigned to new users
 
     // Navigation properties (relationships)
     public ICollection<TierLimit> TierLimits { get; set; } = new List<TierLimit>();
