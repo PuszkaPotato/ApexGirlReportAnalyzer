@@ -2,7 +2,7 @@
 
 **Last Updated:** February 19, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** API-side prep partially done (kept plumbing, reverted services/DTOs/controllers for Veronica to build)
+**Status:** API-side prep mostly done — controllers + DI registration still needed
 
 ---
 
@@ -10,10 +10,10 @@
 
 **Development:**
 - Started: January 20, 2026
-- Time Invested: ~35-40 hours (estimate)
-- Lines of Code: ~4,000 (estimate)
+- Time Invested: ~40-45 hours (estimate)
+- Lines of Code: ~4,500 (estimate)
 - Database Tables: 10 entities
-- API Endpoints: 7 operational
+- API Endpoints: 7 operational (9 when controllers done)
 - Test Coverage: 0% (deferred)
 
 **Technical Performance:**
@@ -54,43 +54,40 @@
 
 ---
 
-## Recent Session Accomplishments (Feb 19)
+## Recent Session Accomplishments (Feb 19 — evening)
 
-### Partial revert of Claude's API-side prep (Feb 19)
-Claude had auto-implemented Phase 3.1 API-side prep. Reverted most code for Veronica to build herself.
-
-**Kept (plumbing/entity changes):**
-- `DiscordServer.cs` — 3 new fields: `UploadChannelId`, `AllowedRoleId`, `LogChannelId`
-- Upload passthrough — `discordChannelId`/`discordMessageId` params through UploadController → IUploadService → UploadService
-- **Migration NOT yet created** — need to run `dotnet ef migrations add AddDiscordServerBotFields ...`
-
-**Reverted (for Veronica to build):**
-- DTOs: `DiscordServerConfigRequest/Response`, `GetOrCreateUserRequest`, `UserResponse`
-- Service: `IDiscordServerService` + `DiscordServerService` (interface + implementation)
-- Controller: `DiscordServerController`
-- UserService: `GetOrCreateByDiscordIdAsync` method + `IUserService` addition
-- UserController: `get-or-create` endpoint
-- Program.cs: DI registration for DiscordServerService
+### API-side prep for Discord bot (built by Veronica)
+- **DTOs:** `GetOrCreateUserRequest`, `UserResponse`, `DiscordServerConfigRequest`, `DiscordServerConfigResponse`
+- **Entities:** `Tier.IsDefault` (bool), `DiscordServer.UpdatedAt` (DateTime?)
+- **Migration:** `AddDiscordBotFields` — created and applied to DB
+- **Seeder:** Free tier now has `IsDefault = true`
+- **Services:** `UserService.GetOrCreateByDiscordIdAsync`, `IDiscordServerService`, `DiscordServerService`
+- **Mappers:** `UserMapper`, `DiscordServerMapper`
+- **Bot project:** Added to solution (scaffold only — Worker template)
 
 ### Previous Sessions
 - CLI API Key Generation (`--generate-apikey` command)
 - Code standards established
 - Extracted shared code: `BattleReportMapper`, `HashHelper`
 - Built `BattleReportService` and `BattleReportController`
+- Upload passthrough: `discordChannelId`/`discordMessageId` through full pipeline
 
 ---
 
 ## What Doesn't Work Yet
 
 ### Not Implemented
+- **Controllers** — `UserController` (get-or-create) + `DiscordServerController` (config endpoints) still needed
+- **DI registration** — `IDiscordServerService` not yet registered in `Program.cs`
+- **Bot project** — scaffold exists but implementation not started
 - **Testing** - No unit or integration tests
-- **Discord Bot API-side prep** - Entity fields added, upload passthrough done; DTOs, services, controllers still needed
-- **EF Migration** - DiscordServer entity fields added but migration not yet generated
-- **Discord Bot project** - Bot project not yet created
 - **Analytics Endpoints** - Stats and aggregations
 - **Admin Features** - No admin panel
 - **Error Reporting** - Users can't report bad extractions
 - **Deployment** - Not hosted anywhere (local only)
+
+### Housekeeping
+- `.claude/settings.local.json` is still tracked by git — run `git rm --cached .claude/settings.local.json` to untrack it
 
 ### Known Limitations
 - No rate limiting beyond quota system
@@ -110,27 +107,31 @@ See `.claude/docs/code-standards.md`:
 
 ### Shared Code
 - `Infrastructure/Mappers/BattleReportMapper.cs` - Entity ↔ DTO
+- `Infrastructure/Mappers/UserMapper.cs` - User entity ↔ UserResponse
+- `Infrastructure/Mappers/DiscordServerMapper.cs` - DiscordServer entity ↔ DiscordServerConfigResponse
 - `Infrastructure/Helpers/HashHelper.cs` - SHA-256 hashing
 
 ---
 
 ## Next Steps (Priority Order)
 
-### Before Phase 3
-1. ~~Implement API Authentication~~ ✓
-2. ~~Generate API keys~~ ✓
-3. ~~Dev seed key~~ ✓
+### Phase 3: Discord Bot — Remaining API-side
+1. ~~DTOs~~ ✓
+2. ~~Services~~ ✓
+3. ~~EF Migration~~ ✓
+4. **`UserController`** — add `POST /api/user/get-or-create` endpoint
+5. **`DiscordServerController`** — `POST /api/discord-server/config` + `GET /api/discord-server/{id}`
+6. **`Program.cs`** — register `IDiscordServerService` in DI
 
-### Phase 3: Discord Bot — Remaining Steps
-1. API-side preparation: ~~entity fields~~ ✓, ~~upload passthrough~~ ✓ — **DTOs, services, controllers still TODO**
-2. **Generate EF migration** for DiscordServer bot fields
-3. **Create Bot project** (`dotnet new worker`, add to solution, NuGet packages)
-4. **Bot scaffold** — Configuration classes, ApiClient, DiscordBotService, Program.cs
-5. **/setup slash command** — Configure upload channel + allowed role
-6. **Screenshot listener** — Core feature: listen for images, upload to API, reply with embed
-7. **/reports slash command** — Query battle reports from Discord
-8. **Error reporting** — Send errors to dev channel
-9. **Polish** — Caching, rate limiting, graceful shutdown, logging
+### Phase 3: Bot Project
+7. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
+8. **`ApiClient`** — Typed HttpClient for all API calls
+9. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
+10. **`/setup` slash command** — `SetupModule.cs`
+11. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
+12. **`/reports` slash command** — `ReportsModule.cs`
+13. **Error reporting** — `ErrorReportingService.cs`
+14. **Polish** — Caching, rate limiting, graceful shutdown, logging
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish
@@ -144,5 +145,5 @@ See `.claude/docs/code-standards.md`:
 **Developer:** Veronica
 **Purpose:** Portfolio + Real Use (gaming group)
 **Timeline:** January 2026 - March 2026 (estimated)
-**Current Phase:** 3 In Progress - API-side prep partially done
-**Next Milestone:** Build Discord DTOs/services/controllers, then EF migration, then Bot project
+**Current Phase:** 3 In Progress
+**Next Milestone:** UserController + DiscordServerController + DI registration, then start Bot project
