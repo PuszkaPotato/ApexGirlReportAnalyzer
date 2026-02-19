@@ -25,7 +25,8 @@ public static class DbSeeder
         var freeTier = new Tier
         {
             Id = Guid.NewGuid(),
-            Name = "Free"
+            Name = "Free",
+            IsDefault = true
         };
 
         var plusTier = new Tier

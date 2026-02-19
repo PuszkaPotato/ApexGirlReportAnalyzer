@@ -24,4 +24,12 @@ public interface IUserService
     /// <param name="discordServerId">Discord server ID (optional)</param>
     /// <returns>Validation result with combined quota info</returns>
     Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, Guid? discordServerId);
+
+    /// <summary>
+    /// Retrieves an existing user associated with the specified Discord identifier, or creates a new user if none
+    /// exists.
+    /// </summary>
+    /// <param name="discordId">The unique identifier for the Discord user. This value must not be empty.</param>
+    Task<UserResponse> GetOrCreateByDiscordIdAsync(String discordId);
+
 }

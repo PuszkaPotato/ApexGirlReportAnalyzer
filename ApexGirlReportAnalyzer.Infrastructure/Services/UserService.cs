@@ -1,5 +1,6 @@
 using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
+using ApexGirlReportAnalyzer.Infrastructure.Mappers;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -107,6 +108,39 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
     {
         var quota = await GetRemainingQuotaAsync(userId);
         return quota.DailyRemaining > 0 && quota.MonthlyRemaining > 0;
+    }
+
+    public async Task<UserResponse> GetOrCreateByDiscordIdAsync(String discordId)
+    {
+        var user = await _context.Users
+            .Include(u => u.Tier)
+            .FirstOrDefaultAsync(u => u.DiscordId == discordId && u.DeletedAt == null);
+        if (user != null)
+        {
+            _logger.LogInformation("Found existing user {UserId} for Discord ID {DiscordId}", user.Id, discordId);
+            return UserMapper.ToDto(user);
+        }
+        // Create new user with default tier (assuming there's a default tier in the database)
+        var defaultTier = await _context.Tiers.FirstOrDefaultAsync(t => t.IsDefault);
+        if (defaultTier == null)
+        {
+            _logger.LogError("No default tier found in the database. Cannot create user.");
+            throw new InvalidOperationException("No default tier configured");
+        }
+        var defaultTierName = defaultTier.Name;
+        var newUser = new Models.Entities.User
+        {
+            Id = Guid.NewGuid(),
+            DiscordId = discordId,
+            TierId = defaultTier.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(newUser);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Created new user {UserId} for Discord ID {DiscordId} with a {TierName} Tier", newUser.Id, discordId, defaultTierName);
+
+        newUser.Tier = defaultTier; // Ensure Tier is loaded for mapping
+        return UserMapper.ToDto(newUser);
     }
 
     private async Task<QuotaValidationResult> ValidateServerQuotaAsync(Guid discordServerId, QuotaInfo userQuota)
