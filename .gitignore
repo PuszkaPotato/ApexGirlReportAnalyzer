@@ -379,3 +379,6 @@ secrets.json
 
 ## Sensitive Keys
 *.key
+
+## Claude local settings
+.claude/settings.local.json
