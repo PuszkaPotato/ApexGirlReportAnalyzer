@@ -375,8 +375,8 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     b.Property<string>("DiscordMessageId")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DiscordServerId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DiscordServerId")
+                        .HasColumnType("text");
 
                     b.Property<decimal?>("EstimatedCostEuro")
                         .HasPrecision(10, 6)
@@ -547,18 +547,11 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.Upload", b =>
                 {
-                    b.HasOne("ApexGirlReportAnalyzer.Models.Entities.DiscordServer", "DiscordServer")
-                        .WithMany("Uploads")
-                        .HasForeignKey("DiscordServerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("ApexGirlReportAnalyzer.Models.Entities.User", "User")
                         .WithMany("Uploads")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("DiscordServer");
 
                     b.Navigation("User");
                 });
@@ -582,8 +575,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.DiscordServer", b =>
                 {
                     b.Navigation("AnalyticsEvents");
-
-                    b.Navigation("Uploads");
                 });
 
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.Tier", b =>

@@ -21,7 +21,6 @@ namespace ApexGirlReportAnalyzer.Models.Entities
 
         // Navigation properties (relationships)
         public Tier? Tier { get; set; }
-        public ICollection<Upload> Uploads { get; set; } = new List<Upload>();
         public ICollection<AnalyticsEvent> AnalyticsEvents { get; set; } = new List<AnalyticsEvent>();
     }
 }

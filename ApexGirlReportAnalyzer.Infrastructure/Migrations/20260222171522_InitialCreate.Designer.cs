@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260124203806_AddUploadQuotaIndex")]
-    partial class AddUploadQuotaIndex
+    [Migration("20260222171522_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -230,6 +230,9 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AllowedRoleId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -243,8 +246,7 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ModeratorRoleIds")
-                        .IsRequired()
+                    b.Property<string>("LogChannelId")
                         .HasColumnType("text");
 
                     b.Property<string>("OwnerDiscordId")
@@ -253,6 +255,12 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
                     b.Property<Guid?>("ServerTierId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UploadChannelId")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -308,6 +316,9 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -367,8 +378,8 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     b.Property<string>("DiscordMessageId")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DiscordServerId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DiscordServerId")
+                        .HasColumnType("text");
 
                     b.Property<decimal?>("EstimatedCostEuro")
                         .HasPrecision(10, 6)
@@ -539,18 +550,11 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.Upload", b =>
                 {
-                    b.HasOne("ApexGirlReportAnalyzer.Models.Entities.DiscordServer", "DiscordServer")
-                        .WithMany("Uploads")
-                        .HasForeignKey("DiscordServerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("ApexGirlReportAnalyzer.Models.Entities.User", "User")
                         .WithMany("Uploads")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("DiscordServer");
 
                     b.Navigation("User");
                 });
@@ -574,8 +578,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.DiscordServer", b =>
                 {
                     b.Navigation("AnalyticsEvents");
-
-                    b.Navigation("Uploads");
                 });
 
             modelBuilder.Entity("ApexGirlReportAnalyzer.Models.Entities.Tier", b =>

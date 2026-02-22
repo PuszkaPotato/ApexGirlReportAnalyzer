@@ -59,7 +59,7 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
         return await ValidateQuotaAsync(userId, null);
     }
 
-    public async Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, Guid? discordServerId)
+    public async Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, string? discordServerId)
     {
         var quota = await GetRemainingQuotaAsync(userId);
 
@@ -85,9 +85,9 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
         }
 
         // Check server quota if discordServerId is provided
-        if (discordServerId.HasValue)
+        if (discordServerId != null)
         {
-            var serverQuotaResult = await ValidateServerQuotaAsync(discordServerId.Value, quota);
+            var serverQuotaResult = await ValidateServerQuotaAsync(discordServerId, quota);
             if (!serverQuotaResult.IsValid)
             {
                 return serverQuotaResult;
@@ -110,7 +110,7 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
         return quota.DailyRemaining > 0 && quota.MonthlyRemaining > 0;
     }
 
-    public async Task<UserResponse> GetOrCreateByDiscordIdAsync(String discordId)
+    public async Task<UserResponse> GetOrCreateByDiscordIdAsync(string discordId)
     {
         var user = await _context.Users
             .Include(u => u.Tier)
@@ -143,12 +143,12 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
         return UserMapper.ToDto(newUser);
     }
 
-    private async Task<QuotaValidationResult> ValidateServerQuotaAsync(Guid discordServerId, QuotaInfo userQuota)
+    private async Task<QuotaValidationResult> ValidateServerQuotaAsync(string discordServerId, QuotaInfo userQuota)
     {
         var server = await _context.DiscordServers
             .Include(s => s.Tier)
                 .ThenInclude(t => t!.TierLimits)
-            .FirstOrDefaultAsync(s => s.Id == discordServerId && s.DeletedAt == null);
+            .FirstOrDefaultAsync(s => s.DiscordServerId == discordServerId && s.DeletedAt == null);
 
         if (server == null)
         {
@@ -248,7 +248,7 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
         return (dailyUploads, monthlyUploads);
     }
 
-    private async Task<(int daily, int monthly)> GetServerUploadCountsAsync(Guid discordServerId)
+    private async Task<(int daily, int monthly)> GetServerUploadCountsAsync(string discordServerId)
     {
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
         var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);

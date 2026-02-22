@@ -23,7 +23,7 @@ public interface IUserService
     /// <param name="userId">User ID making the upload</param>
     /// <param name="discordServerId">Discord server ID (optional)</param>
     /// <returns>Validation result with combined quota info</returns>
-    Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, Guid? discordServerId);
+    Task<QuotaValidationResult> ValidateQuotaAsync(Guid userId, string? discordServerId);
 
     /// <summary>
     /// Retrieves an existing user associated with the specified Discord identifier, or creates a new user if none

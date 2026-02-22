@@ -142,12 +142,6 @@ public class AppDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
 
-            // Relationship to DiscordServer (optional)
-            entity.HasOne(e => e.DiscordServer)
-                  .WithMany(ds => ds.Uploads)
-                  .HasForeignKey(e => e.DiscordServerId)
-                  .OnDelete(DeleteBehavior.SetNull);
-
             // Decimal precision for EstimatedCostEuro
             entity.Property(e => e.EstimatedCostEuro)
                   .HasPrecision(10, 6); // 10 total digits, 4 after decimal

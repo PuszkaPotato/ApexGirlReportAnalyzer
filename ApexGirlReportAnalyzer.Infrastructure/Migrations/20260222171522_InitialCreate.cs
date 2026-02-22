@@ -36,6 +36,7 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
+                    IsDefault = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -50,9 +51,12 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DiscordServerId = table.Column<string>(type: "text", nullable: false),
                     OwnerDiscordId = table.Column<string>(type: "text", nullable: false),
-                    ModeratorRoleIds = table.Column<string>(type: "text", nullable: false),
                     DefaultReportPrivacy = table.Column<int>(type: "integer", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UploadChannelId = table.Column<string>(type: "text", nullable: true),
+                    AllowedRoleId = table.Column<string>(type: "text", nullable: true),
+                    LogChannelId = table.Column<string>(type: "text", nullable: true),
                     ServerTierId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -126,7 +130,7 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     EstimatedCostEuro = table.Column<decimal>(type: "numeric(10,6)", precision: 10, scale: 6, nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DiscordServerId = table.Column<Guid>(type: "uuid", nullable: true),
+                    DiscordServerId = table.Column<string>(type: "text", nullable: true),
                     DiscordChannelId = table.Column<string>(type: "text", nullable: true),
                     DiscordMessageId = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -134,12 +138,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Uploads", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Uploads_DiscordServers_DiscordServerId",
-                        column: x => x.DiscordServerId,
-                        principalTable: "DiscordServers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Uploads_Users_UserId",
                         column: x => x.UserId,
@@ -407,6 +405,11 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Uploads_UserId_Status_CreatedAt",
+                table: "Uploads",
+                columns: new[] { "UserId", "Status", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_DiscordId",
                 table: "Users",
                 column: "DiscordId",
@@ -437,13 +440,13 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                 name: "TierLimits");
 
             migrationBuilder.DropTable(
+                name: "DiscordServers");
+
+            migrationBuilder.DropTable(
                 name: "BattleReports");
 
             migrationBuilder.DropTable(
                 name: "Uploads");
-
-            migrationBuilder.DropTable(
-                name: "DiscordServers");
 
             migrationBuilder.DropTable(
                 name: "Users");

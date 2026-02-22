@@ -57,8 +57,7 @@ public class UploadService : IUploadService
             }
 
             // Step 2: Validate quota using UserService (both user and server quotas)
-            var parsedServerId = ParseDiscordServerId(discordServerId, userId);
-            var quotaValidation = await _userService.ValidateQuotaAsync(userId, parsedServerId);
+            var quotaValidation = await _userService.ValidateQuotaAsync(userId, discordServerId);
             if (!quotaValidation.IsValid)
             {
                 _logger.LogWarning("User {UserId} quota validation failed: {ErrorMessage}",
@@ -80,7 +79,7 @@ public class UploadService : IUploadService
             }
 
             // Step 5: Create Upload record with PENDING status
-            upload = await CreatePendingUploadAsync(userId, imageHash, parsedServerId, discordChannelId, discordMessageId);
+            upload = await CreatePendingUploadAsync(userId, imageHash, discordServerId, discordChannelId, discordMessageId);
 
             // Step 6: Call OpenAI service
             var battleData = await AnalyzeWithOpenAIAsync(upload, base64Image);
@@ -180,7 +179,7 @@ public class UploadService : IUploadService
     private async Task<Upload> CreatePendingUploadAsync(
         Guid userId,
         string imageHash,
-        Guid? discordServerId,
+        string? discordServerId,
         string? discordChannelId = null,
         string? discordMessageId = null)
     {
@@ -207,27 +206,6 @@ public class UploadService : IUploadService
 
         _logger.LogInformation("Upload record created with ID {UploadId}, calling OpenAI...", upload.Id);
         return upload;
-    }
-
-    /// <summary>
-    /// Parse Discord server ID safely
-    /// </summary>
-    private Guid? ParseDiscordServerId(string? discordServerId, Guid userId)
-    {
-        if (string.IsNullOrWhiteSpace(discordServerId))
-        {
-            return null;
-        }
-
-        if (Guid.TryParse(discordServerId, out var parsed))
-        {
-            return parsed;
-        }
-
-        _logger.LogWarning(
-            "Invalid DiscordServerId format: {DiscordServerId} for user {UserId}",
-            discordServerId, userId);
-        return null;
     }
 
     /// <summary>

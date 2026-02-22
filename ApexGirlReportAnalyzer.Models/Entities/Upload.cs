@@ -16,13 +16,12 @@ namespace ApexGirlReportAnalyzer.Models.Entities
 
         // Foreign Keys
         public Guid UserId { get; set; }
-        public Guid? DiscordServerId { get; set; }
+        public string? DiscordServerId { get; set; }
         public string? DiscordChannelId { get; set; }
         public string? DiscordMessageId { get; set; }
 
         // Navigation properties
         public User User { get; set; } = null!;
-        public DiscordServer? DiscordServer { get; set; }
         public BattleReport? BattleReport { get; set; }
 
         // Relationships
