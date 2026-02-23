@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** February 19, 2026
+**Last Updated:** February 24, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** API-side prep mostly done — controllers + DI registration still needed
+**Status:** SRP refactoring in progress — API-side controllers still needed
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Development:**
 - Started: January 20, 2026
-- Time Invested: ~40-45 hours (estimate)
+- Time Invested: ~42-47 hours (estimate)
 - Lines of Code: ~4,500 (estimate)
 - Database Tables: 10 entities
 - API Endpoints: 7 operational (9 when controllers done)
@@ -54,16 +54,31 @@
 
 ---
 
-## Recent Session Accomplishments (Feb 19 — evening)
+## Recent Session Accomplishments (Feb 23 — evening)
 
-### API-side prep for Discord bot (built by Veronica)
-- **DTOs:** `GetOrCreateUserRequest`, `UserResponse`, `DiscordServerConfigRequest`, `DiscordServerConfigResponse`
-- **Entities:** `Tier.IsDefault` (bool), `DiscordServer.UpdatedAt` (DateTime?)
-- **Migration:** `AddDiscordBotFields` — created and applied to DB
-- **Seeder:** Free tier now has `IsDefault = true`
-- **Services:** `UserService.GetOrCreateByDiscordIdAsync`, `IDiscordServerService`, `DiscordServerService`
-- **Mappers:** `UserMapper`, `DiscordServerMapper`
-- **Bot project:** Added to solution (scaffold only — Worker template)
+### SRP Refactoring (based on senior dev feedback)
+- **Removed `AnalyzeWithOpenAIAsync` wrapper** — `UploadService` now calls `_openAIService.AnalyzeScreenshotAsync` directly
+- **Moved `UserExistsAsync`** from `UploadService` → `UserService` (added to `IUserService` interface)
+- **Removed `ParseExtractionVersion`** — `ExtractionVersion` field removed from `BattleReport` entity entirely
+- **Cleaned up inline section comments** — removed "// Step X:" style comments from `ProcessUploadAsync`
+- **Fixed null safety** — upload null check before `MarkUploadAsFailedAsync` in catch block
+
+### DiscordServerId type fix
+- Changed `Upload.DiscordServerId` from `Guid?` to `string?`
+- Removed `ParseDiscordServerId` method — was pointlessly converting string to Guid
+- Removed `DiscordServer` navigation property from `Upload` (FK relationship was incompatible)
+- Removed `Uploads` collection from `DiscordServer`
+- Updated `UserService.ValidateServerQuotaAsync` to query by `DiscordServerId` string
+
+### Prompt file restructure
+- Replaced `BattleAnalysisPrompt.txt` with two files: `BattleAnalysis.json` (version + promptFile ref) + `BattleAnalysis.txt` (prompt text)
+- `OpenAIService.GetPrompt()` now returns `PromptConfig` record with both `Prompt` and `Version`
+- `PromptVersion` now flows through `BattleReportResponse` and saved to `Upload` in `SaveBattleReportAsync`
+- Removed `OpenAI:PromptVersion` and `OpenAI:PromptPath` from config — replaced with `OpenAI:PromptName`
+- Added `<Content CopyToOutputDirectory>` for Prompts folder in `.csproj`
+
+### Migrations reset (twice)
+- Wiped all migrations and recreated `InitialCreate` fresh with correct schema
 
 ### Previous Sessions
 - CLI API Key Generation (`--generate-apikey` command)
@@ -71,10 +86,15 @@
 - Extracted shared code: `BattleReportMapper`, `HashHelper`
 - Built `BattleReportService` and `BattleReportController`
 - Upload passthrough: `discordChannelId`/`discordMessageId` through full pipeline
+- DTOs, Services, EF Migration for Discord bot API-side prep
 
 ---
 
 ## What Doesn't Work Yet
+
+### SRP Refactoring — Remaining
+- **`GetBattleReportResponseAsync`** in `UploadService` — may be duplicated in `BattleReportService`, investigate
+- **`CreateErrorResponse`** in `UploadService` — should move to `UploadResponseHelper` static class
 
 ### Not Implemented
 - **Controllers** — `UserController` (get-or-create) + `DiscordServerController` (config endpoints) still needed
@@ -85,9 +105,6 @@
 - **Admin Features** - No admin panel
 - **Error Reporting** - Users can't report bad extractions
 - **Deployment** - Not hosted anywhere (local only)
-
-### Housekeeping
-- `.claude/settings.local.json` is still tracked by git — run `git rm --cached .claude/settings.local.json` to untrack it
 
 ### Known Limitations
 - No rate limiting beyond quota system
@@ -104,6 +121,7 @@ See `.claude/docs/code-standards.md`:
 - XML documentation on public APIs
 - Structured logging with templates
 - Early return pattern for validation
+- No inline section comments — extract to methods or rely on self-documenting code
 
 ### Shared Code
 - `Infrastructure/Mappers/BattleReportMapper.cs` - Entity ↔ DTO
@@ -115,23 +133,24 @@ See `.claude/docs/code-standards.md`:
 
 ## Next Steps (Priority Order)
 
+### SRP Refactoring — Finish
+1. Investigate `GetBattleReportResponseAsync` — is it duplicated in `BattleReportService`?
+2. Create `UploadResponseHelper` and move `CreateErrorResponse` into it
+
 ### Phase 3: Discord Bot — Remaining API-side
-1. ~~DTOs~~ ✓
-2. ~~Services~~ ✓
-3. ~~EF Migration~~ ✓
-4. **`UserController`** — add `POST /api/user/get-or-create` endpoint
-5. **`DiscordServerController`** — `POST /api/discord-server/config` + `GET /api/discord-server/{id}`
-6. **`Program.cs`** — register `IDiscordServerService` in DI
+3. **`UserController`** — add `POST /api/user/get-or-create` endpoint
+4. **`DiscordServerController`** — `POST /api/discord-server/config` + `GET /api/discord-server/{id}`
+5. **`Program.cs`** — register `IDiscordServerService` in DI
 
 ### Phase 3: Bot Project
-7. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
-8. **`ApiClient`** — Typed HttpClient for all API calls
-9. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
-10. **`/setup` slash command** — `SetupModule.cs`
-11. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
-12. **`/reports` slash command** — `ReportsModule.cs`
-13. **Error reporting** — `ErrorReportingService.cs`
-14. **Polish** — Caching, rate limiting, graceful shutdown, logging
+6. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
+7. **`ApiClient`** — Typed HttpClient for all API calls
+8. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
+9. **`/setup` slash command** — `SetupModule.cs`
+10. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
+11. **`/reports` slash command** — `ReportsModule.cs`
+12. **Error reporting** — `ErrorReportingService.cs`
+13. **Polish** — Caching, rate limiting, graceful shutdown, logging
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish
@@ -146,4 +165,4 @@ See `.claude/docs/code-standards.md`:
 **Purpose:** Portfolio + Real Use (gaming group)
 **Timeline:** January 2026 - March 2026 (estimated)
 **Current Phase:** 3 In Progress
-**Next Milestone:** UserController + DiscordServerController + DI registration, then start Bot project
+**Next Milestone:** Finish SRP refactoring, then UserController + DiscordServerController + DI registration, then start Bot project

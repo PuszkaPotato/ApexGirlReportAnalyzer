@@ -177,27 +177,44 @@ var startOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
 
 ---
 
-### Decision 23: External Prompt Storage
+### Decision 23: External Prompt Storage (Updated Feb 2026)
 
-**Chosen:** Store OpenAI prompt in `/Prompts/BattleAnalysisPrompt.txt`
-**Alternatives Considered:** Hardcoded string in service, database table, configuration file
-**Date:** January 2026
+**Chosen:** Store prompt as two files — `BattleAnalysis.json` (metadata) + `BattleAnalysis.txt` (prompt text)
+**Previous approach:** Single `BattleAnalysisPrompt.txt` file with `PromptPath` config
+**Date:** January 2026, Updated February 2026
 
 **Reasoning:**
 - **Iteration speed** - Can modify prompt without rebuilding application
 - **Version control** - Prompt changes tracked in Git
-- **Readability** - Easier to edit multi-line prompt in dedicated file
-- **Testing** - Quickly test prompt variations without code changes
+- **Readability** - Easier to edit multi-line prompt in dedicated `.txt` file
+- **Version tracking** - JSON metadata file co-locates version with prompt (no config drift)
 - **Deployment** - Can update prompt in production without code deployment (if needed)
+
+**Structure:**
+```
+Prompts/
+  BattleAnalysis.json   ← { "version": "1.0", "promptFile": "BattleAnalysis.txt" }
+  BattleAnalysis.txt    ← prompt text (human-readable, easily editable)
+```
 
 **Configuration:**
 ```json
 {
   "OpenAI": {
-    "PromptPath": "Prompts/BattleAnalysisPrompt.txt"
+    "PromptName": "BattleAnalysis"
   }
 }
 ```
+
+**Why not JSON string for prompt:**
+- JSON requires escaping all quotes and newlines — makes prompt unreadable and uneditable
+- YAML is readable but adds a dependency and Veronica hates it
+- Two files (JSON metadata + TXT content) gives best of both worlds
+
+**Why version moved out of config:**
+- Previously `OpenAI:PromptVersion` in appsettings — easy to forget to update when changing prompt
+- Now version lives next to the prompt itself — single source of truth
+- `PromptVersion` flows through `BattleReportResponse` → stored on `Upload` entity
 
 ---
 

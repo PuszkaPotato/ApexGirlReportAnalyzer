@@ -8,7 +8,7 @@ This document tracks skills learned and interview preparation progress throughou
 
 ### C# Language Features
 - [x] **Nullable reference types** - Used extensively (`string?`, `Guid?`, `int?` in DTOs and entities)
-- [ ] **Records and init properties** - Not used yet (may use in Phase 2 for test data)
+- [x] **Records and init properties** - Used `private record PromptConfig(string Prompt, string Version)` in OpenAIService for internal data bundling
 - [ ] **Pattern matching** - Limited use (some `is` checks for null)
 - [x] **Async/await** - Used throughout (all service methods, database calls, OpenAI calls)
 - [x] **LINQ** - Extensive use (EF Core queries, filtering, Include/ThenInclude)

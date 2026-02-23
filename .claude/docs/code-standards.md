@@ -96,16 +96,17 @@ public class UploadService : IUploadService
 ```csharp
 #region Private Helper Methods
 
-/// <summary>
-/// Check if user exists and is not deleted
-/// </summary>
-private async Task<bool> UserExistsAsync(Guid userId)
-{
-    return await _context.Users.AnyAsync(u => u.Id == userId && u.DeletedAt == null);
-}
+// private helper methods here
 
 #endregion
 ```
+
+**Single Responsibility — keep services focused:**
+- A service should only contain logic that belongs to its domain
+- `UserService` handles user operations (existence checks, quota, get-or-create)
+- `OpenAIService` handles all OpenAI interaction (calling API, parsing response, invalid image detection)
+- `UploadService` orchestrates the upload flow — delegates to other services
+- Shared pure functions (no DI needed) → static helper classes (e.g., `HashHelper`, `UploadResponseHelper`)
 
 ---
 
@@ -304,6 +305,38 @@ public static class UserMapper
 - Null guard with `ArgumentNullException` (not silent empty return)
 - Named `ToDto` for entity → DTO, `ToEntity` for the reverse if needed
 - Apply the **boy scout rule**: extract inline mapping to a mapper when you touch a file
+
+---
+
+## Comments
+
+**Don't use comments as section headers:**
+```csharp
+// BAD - just names what the code does
+// Create BattleReport
+var battleReport = new BattleReport { ... };
+
+// GOOD - code is self-documenting, no comment needed
+var battleReport = new BattleReport { ... };
+```
+
+**If you feel the need to comment a block, extract it to a method:**
+```csharp
+// BAD
+// Create and configure identity
+var identity = new ClaimsIdentity();
+identity.AddClaim(...);
+// ...
+
+// GOOD
+var identity = CreateIdentity(...);
+```
+
+**Comments that explain WHY are fine:**
+```csharp
+// Quota not consumed for duplicates — user already paid for this upload
+RemainingQuota = quotaInfo
+```
 
 ---
 
