@@ -49,14 +49,12 @@ public class UploadService : IUploadService
         {
             _logger.LogInformation("Starting upload processing for user {UserId}", userId);
 
-            // Step 1: Validate user exists
-            if (!await UserExistsAsync(userId))
+            if (!await _userService.UserExistsAsync(userId))
             {
                 _logger.LogWarning("User {UserId} not found or deleted", userId);
                 return CreateErrorResponse("User not found");
             }
 
-            // Step 2: Validate quota using UserService (both user and server quotas)
             var quotaValidation = await _userService.ValidateQuotaAsync(userId, discordServerId);
             if (!quotaValidation.IsValid)
             {
@@ -67,44 +65,35 @@ public class UploadService : IUploadService
                     quotaValidation.QuotaInfo);
             }
 
-            // Step 3: Calculate image hash for deduplication
             var imageHash = HashHelper.CalculateSha256(base64Image);
             _logger.LogInformation("Image hash calculated: {ImageHash}", imageHash);
 
-            // Step 4: Check for duplicate
             var duplicateResponse = await CheckForDuplicateAsync(imageHash, quotaValidation.QuotaInfo);
             if (duplicateResponse != null)
             {
                 return duplicateResponse;
             }
 
-            // Step 5: Create Upload record with PENDING status
             upload = await CreatePendingUploadAsync(userId, imageHash, discordServerId, discordChannelId, discordMessageId);
 
-            // Step 6: Call OpenAI service
-            var battleData = await AnalyzeWithOpenAIAsync(upload, base64Image);
-            if (battleData == null)
-            {
-                // Check if it was invalid image vs other error
-                var errorMsg = upload.FailureReason?.Contains("Invalid image") == true
-                    ? "This doesn't appear to be an Apex Girl battle report. Please upload a screenshot from the Battle Overview screen."
-                    : "Failed to analyze screenshot. Please try again.";
+            var battleData = await _openAIService.AnalyzeScreenshotAsync(base64Image);
 
+            if (battleData.IsInvalid)
+            {
+                await MarkUploadAsFailedAsync(upload, battleData.InvalidReason ?? "Failed to retrieve the reason from OpenAi");
                 return CreateErrorResponse(
-                    errorMsg,
+                    battleData.InvalidReason ?? "Invalid screenshot",
                     quotaValidation.QuotaInfo,
                     upload.Id,
                     UploadStatus.Failed);
             }
 
-            // Step 7-9: Save battle report and update upload to SUCCESS
             await SaveBattleReportAsync(upload, battleData, playerInGameId, enemyInGameId);
 
             _logger.LogInformation(
                 "Upload {UploadId} processed successfully. Tokens: {Tokens}, Cost: €{Cost:F4}",
                 upload.Id, upload.TokenEstimate, upload.EstimatedCostEuro);
 
-            // Step 10: Return success response with updated quota
             var updatedQuota = await _userService.GetRemainingQuotaAsync(userId);
 
             return new UploadResponse
@@ -122,7 +111,9 @@ public class UploadService : IUploadService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error processing upload for user {UserId}", userId);
-            await MarkUploadAsFailedAsync(upload, $"Unexpected error: {ex.Message}");
+
+            if (upload != null)
+                await MarkUploadAsFailedAsync(upload, $"Unexpected error: {ex.Message}");
 
             return CreateErrorResponse(
                 "An unexpected error occurred during processing",
@@ -132,14 +123,6 @@ public class UploadService : IUploadService
     }
 
     #region Private Helper Methods
-
-    /// <summary>
-    /// Check if user exists and is not deleted
-    /// </summary>
-    private async Task<bool> UserExistsAsync(Guid userId)
-    {
-        return await _context.Users.AnyAsync(u => u.Id == userId && u.DeletedAt == null);
-    }
 
     /// <summary>
     /// Check if this image has already been processed
@@ -154,7 +137,7 @@ public class UploadService : IUploadService
 
         if (existingUpload?.BattleReport == null)
         {
-            return null; // Not a duplicate
+            return null;
         }
 
         _logger.LogInformation(
@@ -209,39 +192,6 @@ public class UploadService : IUploadService
     }
 
     /// <summary>
-    /// Analyze screenshot with OpenAI, handling errors gracefully
-    /// </summary>
-    private async Task<BattleReportResponse?> AnalyzeWithOpenAIAsync(Upload upload, string base64Image)
-    {
-        try
-        {
-            var result = await _openAIService.AnalyzeScreenshotAsync(base64Image);
-
-            // Check if OpenAI flagged image as invalid
-            if (result.IsInvalid)
-            {
-                _logger.LogWarning(
-                    "Upload {UploadId} rejected by OpenAI: {Reason}",
-                    upload.Id, result.InvalidReason);
-
-                await MarkUploadAsFailedAsync(
-                    upload,
-                    $"Invalid image: {result.InvalidReason}");
-
-                return null;
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "OpenAI analysis failed for upload {UploadId}", upload.Id);
-            await MarkUploadAsFailedAsync(upload, $"OpenAI analysis failed: {ex.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
     /// Mark upload as failed and save
     /// </summary>
     private async Task MarkUploadAsFailedAsync(Upload? upload, string reason)
@@ -269,7 +219,6 @@ public class UploadService : IUploadService
     string? playerInGameId = null,
     string? enemyInGameId = null)
     {
-        // Create BattleReport
         var battleReport = new BattleReport
         {
             Id = Guid.NewGuid(),
@@ -282,14 +231,12 @@ public class UploadService : IUploadService
 
         _context.BattleReports.Add(battleReport);
 
-        // Create BattleSides (Player and Enemy)
         var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId);
         var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId);
 
         _context.BattleSides.Add(playerSide);
         _context.BattleSides.Add(enemySide);
 
-        // Update Upload to SUCCESS
         upload.Status = UploadStatus.Success;
         upload.TokenEstimate = battleData.TokensUsed ?? 0;
         upload.EstimatedCostEuro = battleData.EstimatedCost;

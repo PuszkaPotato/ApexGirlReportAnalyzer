@@ -62,7 +62,6 @@ public class OpenAIService : IOpenAIService
             };
             var openAiResponse = JsonSerializer.Deserialize<OpenAIResponse>(responseContent, options);
 
-            // ADD THIS LINE - Log the raw response
             _logger.LogInformation("Raw OpenAI response: {Response}", responseContent);
 
             if (openAiResponse?.Choices == null || openAiResponse.Choices.Length == 0)

@@ -49,7 +49,7 @@ public class BattleReportResponse
     /// <summary>
     /// Whether OpenAI flagged this image as invalid (not a battle report)
     /// </summary>
-    public bool IsInvalid { get; set; }
+    public bool IsInvalid { get; set; } = false;
 
     /// <summary>
     /// Reason why the image was flagged as invalid

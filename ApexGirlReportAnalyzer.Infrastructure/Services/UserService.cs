@@ -269,4 +269,9 @@ public class UserService(AppDbContext context, ILogger<UserService> logger) : IU
 
         return (dailyUploads, monthlyUploads);
     }
+
+    public async Task<bool> UserExistsAsync(Guid userId)
+    {
+        return await _context.Users.AnyAsync(u => u.Id == userId && u.DeletedAt == null);
+    }
 }

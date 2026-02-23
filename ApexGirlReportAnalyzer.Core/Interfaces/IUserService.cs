@@ -32,4 +32,9 @@ public interface IUserService
     /// <param name="discordId">The unique identifier for the Discord user. This value must not be empty.</param>
     Task<UserResponse> GetOrCreateByDiscordIdAsync(String discordId);
 
+    /// <summary>
+    /// Returns true if a user with the given ID exists and is not deleted.
+    /// </summary>
+    Task<bool> UserExistsAsync(Guid userId);
+
 }
