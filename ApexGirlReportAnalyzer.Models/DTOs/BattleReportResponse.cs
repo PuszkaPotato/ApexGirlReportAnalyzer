@@ -55,4 +55,9 @@ public class BattleReportResponse
     /// Reason why the image was flagged as invalid
     /// </summary>
     public string? InvalidReason { get; set; }
+
+    /// <summary>
+    /// Version of the prompt used for analysis, read from prompt file.
+    /// </summary>
+    public string PromptVersion { get; set; } = string.Empty;
 }

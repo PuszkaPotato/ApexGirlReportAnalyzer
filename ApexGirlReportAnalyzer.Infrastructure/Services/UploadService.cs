@@ -167,7 +167,6 @@ public class UploadService : IUploadService
         string? discordMessageId = null)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
-        var promptVersion = _configuration["OpenAI:PromptVersion"] ?? "1.0";
 
         var upload = new Upload
         {
@@ -179,7 +178,6 @@ public class UploadService : IUploadService
             DiscordMessageId = discordMessageId,
             Status = UploadStatus.Pending,
             OpenAiModel = model,
-            PromptVersion = promptVersion,
             TokenEstimate = 0,
             CreatedAt = DateTime.UtcNow
         };
@@ -225,7 +223,6 @@ public class UploadService : IUploadService
             UploadId = upload.Id,
             BattleType = battleData.BattleType,
             BattleDate = battleData.BattleDate,
-            ExtractionVersion = ParseExtractionVersion(upload.PromptVersion),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -240,27 +237,9 @@ public class UploadService : IUploadService
         upload.Status = UploadStatus.Success;
         upload.TokenEstimate = battleData.TokensUsed ?? 0;
         upload.EstimatedCostEuro = battleData.EstimatedCost;
+        upload.PromptVersion = battleData.PromptVersion;
 
         await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Parse extraction version from prompt version string
-    /// </summary>
-    private static int ParseExtractionVersion(string promptVersion)
-    {
-        if (string.IsNullOrEmpty(promptVersion))
-        {
-            return 1;
-        }
-
-        var parts = promptVersion.Split('.');
-        if (parts.Length > 0 && int.TryParse(parts[0], out var version))
-        {
-            return version;
-        }
-
-        return 1;
     }
 
     /// <summary>

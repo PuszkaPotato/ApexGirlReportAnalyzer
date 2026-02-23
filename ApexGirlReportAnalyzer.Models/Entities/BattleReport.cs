@@ -2,7 +2,6 @@
 {
     public class BattleReport : BaseEntity
     {
-        public int ExtractionVersion { get; set; }
         public DateTime BattleDate { get; set; }
         public string BattleType { get; set; } = string.Empty;
         public DateTime? DeletedAt { get; set; }

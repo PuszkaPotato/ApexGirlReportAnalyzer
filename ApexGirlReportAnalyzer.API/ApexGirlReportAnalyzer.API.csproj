@@ -8,6 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Prompts\BattleAnalysis.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Prompts\**">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
@@ -26,10 +36,6 @@
     <ProjectReference Include="..\ApexGirlReportAnalyzer.Core\ApexGirlReportAnalyzer.Core.csproj" />
     <ProjectReference Include="..\ApexGirlReportAnalyzer.Infrastructure\ApexGirlReportAnalyzer.Infrastructure.csproj" />
     <ProjectReference Include="..\ApexGirlReportAnalyzer.Models\ApexGirlReportAnalyzer.Models.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Prompts\" />
   </ItemGroup>
 
 </Project>

@@ -32,12 +32,14 @@ public class OpenAIService : IOpenAIService
 
     public async Task<BattleReportResponse> AnalyzeScreenshotAsync(string base64Image)
     {
+        var promptConfig = GetPrompt();
+
         try
         {
             _logger.LogInformation("Starting OpenAI analysis...");
 
             // Build the request
-            var requestBody = BuildRequest(base64Image);
+            var requestBody = BuildRequest(base64Image, promptConfig.Prompt);
 
             // Call OpenAI API
             var apiUrl = _configuration["OpenAI:ApiUrl"] ?? "https://api.openai.com/v1/chat/completions";
@@ -87,6 +89,8 @@ public class OpenAIService : IOpenAIService
             _logger.LogInformation("Analysis complete. Tokens used: {Tokens}, Cost: ${Cost:F4}",
                 battleData.TokensUsed, battleData.EstimatedCost);
 
+            battleData.PromptVersion = promptConfig.Version;
+
             return battleData;
         }
         catch (Exception ex)
@@ -96,7 +100,7 @@ public class OpenAIService : IOpenAIService
         }
     }
 
-    private object BuildRequest(string base64Image)
+    private object BuildRequest(string base64Image, string promptText)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4.1";
         var maxTokens = int.TryParse(_configuration["OpenAI:MaxTokens"], out var tokens) ? tokens : 1500;
@@ -115,7 +119,7 @@ public class OpenAIService : IOpenAIService
                         new
                         {
                             type = "text",
-                            text = GetPrompt()
+                            text = promptText
                         },
                         new
                         {
@@ -131,18 +135,30 @@ public class OpenAIService : IOpenAIService
         };
     }
 
-    private string GetPrompt()
+    private PromptConfig GetPrompt()
     {
-        var promptPath = _configuration["OpenAI:PromptPath"] 
-            ?? Path.Combine(AppContext.BaseDirectory, "Prompts", "BattleAnalysisPrompt.txt");
+        var promptsDir = Path.Combine(AppContext.BaseDirectory, "Prompts");
+        var promptName = _configuration["OpenAI:PromptName"] ?? "default";
+        var promptPath = Path.Combine(promptsDir, $"{promptName}.json");
 
         if (!File.Exists(promptPath))
         {
-            _logger.LogError("Prompt file not found at: {PromptPath}", promptPath);
             throw new FileNotFoundException($"Prompt file not found at: {promptPath}");
         }
 
-        return File.ReadAllText(promptPath);
+        var json = File.ReadAllText(promptPath);
+        var config = JsonSerializer.Deserialize<PromptJsonFile>(json);
+
+        if (config == null || string.IsNullOrWhiteSpace(config.PromptFile))
+        {
+            throw new InvalidOperationException("Invalid prompt configuration file");
+        }
+
+        var promptTextPath = Path.Combine(promptsDir, config.PromptFile);
+
+        var promptText = File.ReadAllText(promptTextPath);
+
+        return new PromptConfig(promptText, config.Version);
     }
 
     private BattleReportResponse ParseBattleData(string aiResponse)
@@ -308,4 +324,14 @@ public class OpenAIService : IOpenAIService
         [JsonPropertyName("total_tokens")]
         public int TotalTokens { get; set; }
     }
+
+    private class PromptJsonFile
+    {
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = string.Empty;
+        [JsonPropertyName("promptFile")]
+        public string PromptFile { get; set; } = string.Empty;
+    }
+
+    private record PromptConfig(string Prompt, string Version);
 }

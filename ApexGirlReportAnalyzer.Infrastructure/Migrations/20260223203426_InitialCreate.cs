@@ -186,7 +186,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ExtractionVersion = table.Column<int>(type: "integer", nullable: false),
                     BattleDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     BattleType = table.Column<string>(type: "text", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

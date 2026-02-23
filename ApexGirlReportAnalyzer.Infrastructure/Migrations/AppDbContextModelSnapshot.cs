@@ -123,9 +123,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ExtractionVersion")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("UploadId")
                         .HasColumnType("uuid");
 

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260222171522_InitialCreate")]
+    [Migration("20260223203426_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -125,9 +125,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("ExtractionVersion")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("UploadId")
                         .HasColumnType("uuid");
