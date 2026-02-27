@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using ApexGirlReportAnalyzer.API.Authentication;
+using ApexGirlReportAnalyzer.API.Helpers;
 using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
 using ApexGirlReportAnalyzer.Infrastructure.Services;
@@ -27,7 +28,11 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBattleReportService, BattleReportService>();
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
+    });
 
 builder.Services.AddSwaggerGen(options =>
 {
