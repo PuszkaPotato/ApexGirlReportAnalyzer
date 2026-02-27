@@ -64,7 +64,7 @@ public class BattleReportController : ControllerBase
     }
 
     [HttpGet("reportId")]
-    public async Task<IActionResult> GetBattleReportById([FromRoute] Guid reportId)
+    public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId)
     {
         var report = await _battleReportService.GetBattleReportByIdAsync(reportId);
         if (report == null)

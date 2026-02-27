@@ -125,7 +125,7 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                     Status = table.Column<int>(type: "integer", nullable: false),
                     FailureReason = table.Column<string>(type: "text", nullable: true),
                     OpenAiModel = table.Column<string>(type: "text", nullable: false),
-                    PromptVersion = table.Column<string>(type: "text", nullable: false),
+                    PromptVersion = table.Column<string>(type: "text", nullable: true),
                     TokenEstimate = table.Column<int>(type: "integer", nullable: false),
                     EstimatedCostEuro = table.Column<decimal>(type: "numeric(10,6)", precision: 10, scale: 6, nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

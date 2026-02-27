@@ -55,11 +55,12 @@ public static class BattleReportMapper
             ReportId = report.Id,
             BattleType = report.BattleType,
             BattleDate = report.BattleDate,
-            UploadedAt = report.CreatedAt,
+            UploadedAt = upload?.CreatedAt,
             Player = ToDto(playerSide),
             Enemy = ToDto(enemySide),
             TokensUsed = upload?.TokenEstimate,
-            EstimatedCost = upload?.EstimatedCostEuro
+            EstimatedCost = upload?.EstimatedCostEuro,
+            PromptVersion = upload?.PromptVersion ?? string.Empty
         };
     }
 

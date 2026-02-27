@@ -33,24 +33,9 @@ public class UploadResponse
     public bool IsDuplicate { get; set; }
 
     /// <summary>
-    /// If duplicate, the ID of the existing battle report
-    /// </summary>
-    public Guid? ExistingBattleReportId { get; set; }
-
-    /// <summary>
     /// Error message if upload failed
     /// </summary>
     public string? ErrorMessage { get; set; }
-
-    /// <summary>
-    /// Tokens used for this analysis
-    /// </summary>
-    public int? TokensUsed { get; set; }
-
-    /// <summary>
-    /// Estimated cost for this analysis
-    /// </summary>
-    public decimal? EstimatedCost { get; set; }
 
     /// <summary>
     /// User's remaining quota (uploads left for today/month)

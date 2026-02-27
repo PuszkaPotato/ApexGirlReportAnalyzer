@@ -394,7 +394,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("PromptVersion")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")

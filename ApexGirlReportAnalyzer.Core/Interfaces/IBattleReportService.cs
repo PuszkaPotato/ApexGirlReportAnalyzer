@@ -29,4 +29,6 @@ public interface IBattleReportService
         int offset = 0);
 
     Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId);
+
+    Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId);
 }

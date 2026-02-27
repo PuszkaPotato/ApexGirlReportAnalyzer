@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260223203426_InitialCreate")]
+    [Migration("20260227165703_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -397,7 +397,6 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("PromptVersion")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")

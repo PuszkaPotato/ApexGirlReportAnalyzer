@@ -9,7 +9,7 @@ namespace ApexGirlReportAnalyzer.Models.Entities
         public UploadStatus Status { get; set; }
         public string? FailureReason { get; set; }
         public string OpenAiModel { get; set; } = null!;
-        public string PromptVersion { get; set; } = null!;
+        public string? PromptVersion { get; set; }
         public int TokenEstimate { get; set; }
         public decimal? EstimatedCostEuro { get; set; }
         public DateTime? DeletedAt { get; set; }

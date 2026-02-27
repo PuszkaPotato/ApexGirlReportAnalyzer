@@ -1,7 +1,9 @@
 using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
-using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Infrastructure.Mappers;
+using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Entities;
+using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,9 +17,7 @@ public class BattleReportService : IBattleReportService
 
     public BattleReportService(
         AppDbContext context, 
-        ILogger<BattleReportService> logger,
-        IUserService userService,
-        IConfiguration configuration)
+        ILogger<BattleReportService> logger)
     {
         _context = context;
         _logger = logger;
@@ -79,5 +79,31 @@ public class BattleReportService : IBattleReportService
             return null;
 
         return BattleReportMapper.ToDto(query, query.Upload);
+    }
+
+    public async Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId)
+    {
+
+        var battleReport = new BattleReport
+        {
+            Id = Guid.NewGuid(),
+            UploadId = uploadId,
+            BattleType = battleData.BattleType,
+            BattleDate = battleData.BattleDate,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _context.BattleReports.Add(battleReport);
+
+        var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId);
+        var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId);
+
+        _context.BattleSides.Add(playerSide);
+        _context.BattleSides.Add(enemySide);
+
+        await _context.SaveChangesAsync();
+
+        return battleReport.Id;
+
     }
 }

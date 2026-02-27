@@ -1,7 +1,6 @@
 ﻿using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Data;
 using ApexGirlReportAnalyzer.Infrastructure.Helpers;
-using ApexGirlReportAnalyzer.Infrastructure.Mappers;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Entities;
 using ApexGirlReportAnalyzer.Models.Enums;
@@ -16,6 +15,7 @@ public class UploadService : IUploadService
     private readonly AppDbContext _context;
     private readonly IOpenAIService _openAIService;
     private readonly IUserService _userService;
+    private readonly IBattleReportService _battleReportService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<UploadService> _logger;
 
@@ -23,12 +23,14 @@ public class UploadService : IUploadService
         AppDbContext context,
         IOpenAIService openAIService,
         IUserService userService,
+        IBattleReportService battleReportService,
         IConfiguration configuration,
         ILogger<UploadService> logger)
     {
         _context = context;
         _openAIService = openAIService;
         _userService = userService;
+        _battleReportService = battleReportService;
         _configuration = configuration;
         _logger = logger;
     }
@@ -88,7 +90,11 @@ public class UploadService : IUploadService
                     UploadStatus.Failed);
             }
 
-            await SaveBattleReportAsync(upload, battleData, playerInGameId, enemyInGameId);
+            var reportId = await _battleReportService.CreateBattleReportAsync(battleData, upload.Id, playerInGameId, enemyInGameId);
+
+            await SaveUploadAsync(upload, battleData);
+
+            battleData = await _battleReportService.GetBattleReportByIdAsync(reportId);
 
             _logger.LogInformation(
                 "Upload {UploadId} processed successfully. Tokens: {Tokens}, Cost: €{Cost:F4}",
@@ -103,8 +109,6 @@ public class UploadService : IUploadService
                 Status = UploadStatus.Success,
                 BattleData = battleData,
                 IsDuplicate = false,
-                TokensUsed = battleData.TokensUsed,
-                EstimatedCost = battleData.EstimatedCost,
                 RemainingQuota = updatedQuota
             };
         }
@@ -150,8 +154,7 @@ public class UploadService : IUploadService
             UploadId = existingUpload.Id,
             Status = UploadStatus.Success,
             IsDuplicate = true,
-            ExistingBattleReportId = existingUpload.BattleReport.Id,
-            BattleData = await GetBattleReportResponseAsync(existingUpload.BattleReport.Id),
+            BattleData = await _battleReportService.GetBattleReportByIdAsync(existingUpload.BattleReport.Id),
             RemainingQuota = quotaInfo // Quota not consumed for duplicates
         };
     }
@@ -211,53 +214,16 @@ public class UploadService : IUploadService
     /// <summary>
     /// Save battle report and related entities
     /// </summary>
-    private async Task SaveBattleReportAsync(
+    private async Task SaveUploadAsync(
     Upload upload,
-    BattleReportResponse battleData,
-    string? playerInGameId = null,
-    string? enemyInGameId = null)
+    BattleReportResponse battleData)
     {
-        var battleReport = new BattleReport
-        {
-            Id = Guid.NewGuid(),
-            UploadId = upload.Id,
-            BattleType = battleData.BattleType,
-            BattleDate = battleData.BattleDate,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.BattleReports.Add(battleReport);
-
-        var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId);
-        var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId);
-
-        _context.BattleSides.Add(playerSide);
-        _context.BattleSides.Add(enemySide);
-
         upload.Status = UploadStatus.Success;
         upload.TokenEstimate = battleData.TokensUsed ?? 0;
         upload.EstimatedCostEuro = battleData.EstimatedCost;
         upload.PromptVersion = battleData.PromptVersion;
 
         await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Retrieve full battle report data by ID (for duplicate detection)
-    /// </summary>
-    private async Task<BattleReportResponse> GetBattleReportResponseAsync(Guid battleReportId)
-    {
-        var battleReport = await _context.BattleReports
-            .Include(br => br.BattleSides)
-            .Include(br => br.Upload)
-            .FirstOrDefaultAsync(br => br.Id == battleReportId);
-
-        if (battleReport == null)
-        {
-            throw new InvalidOperationException($"BattleReport {battleReportId} not found");
-        }
-
-        return BattleReportMapper.ToDto(battleReport, battleReport.Upload);
     }
 
     /// <summary>
