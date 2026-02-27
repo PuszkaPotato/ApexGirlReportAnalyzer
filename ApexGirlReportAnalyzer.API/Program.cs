@@ -11,23 +11,21 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add DbContext with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add HttpClient for OpenAI service
 builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 
-// Add UploadService
 builder.Services.AddScoped<IUploadService, UploadService>();
 
-// Add UserService
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Add BattleReportService
 builder.Services.AddScoped<IBattleReportService, BattleReportService>();
 
-// Add services to the container.
+builder.Services.AddScoped<IDiscordServerService, DiscordServerService>();
+
+builder.Services.AddScoped<ITierService, TierService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -52,7 +50,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Add API key authentication
 builder.Services.AddAuthentication("ApiKey")
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
 
