@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** February 24, 2026
+**Last Updated:** February 27, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** SRP refactoring in progress — API-side controllers still needed
+**Status:** Tier management in progress — TiersController endpoints remaining
 
 ---
 
@@ -13,7 +13,7 @@
 - Time Invested: ~42-47 hours (estimate)
 - Lines of Code: ~4,500 (estimate)
 - Database Tables: 10 entities
-- API Endpoints: 7 operational (9 when controllers done)
+- API Endpoints: 9 operational
 - Test Coverage: 0% (deferred)
 
 **Technical Performance:**
@@ -35,7 +35,10 @@
 | `/api/upload/batch` | POST | Upload multiple screenshots (max 20) |
 | `/api/battlereport/battlereport` | GET | Query reports with filters + pagination |
 | `/api/battlereport/battlereport/{id}` | GET | Get single report by ID |
+| `/api/user/get-or-create` | POST | Get or create user by Discord ID |
 | `/api/user/quota/{userId}` | GET | Check remaining uploads |
+| `/api/discordserver/config` | POST | Set or update Discord server config |
+| `/api/discordserver/{discordServerId}` | GET | Get Discord server config |
 | `/api/status/health` | GET | Health check |
 
 ### BattleReport Query Features
@@ -92,13 +95,8 @@
 
 ## What Doesn't Work Yet
 
-### SRP Refactoring — Remaining
-- **`GetBattleReportResponseAsync`** in `UploadService` — may be duplicated in `BattleReportService`, investigate
-- **`CreateErrorResponse`** in `UploadService` — should move to `UploadResponseHelper` static class
-
 ### Not Implemented
-- **Controllers** — `UserController` (get-or-create) + `DiscordServerController` (config endpoints) still needed
-- **DI registration** — `IDiscordServerService` not yet registered in `Program.cs`
+- **TiersController** — `GetTiers` done, remaining endpoints (Create, Update, Delete, AssignToUser, AssignToServer) still needed
 - **Bot project** — scaffold exists but implementation not started
 - **Testing** - No unit or integration tests
 - **Analytics Endpoints** - Stats and aggregations
@@ -128,29 +126,25 @@ See `.claude/docs/code-standards.md`:
 - `Infrastructure/Mappers/UserMapper.cs` - User entity ↔ UserResponse
 - `Infrastructure/Mappers/DiscordServerMapper.cs` - DiscordServer entity ↔ DiscordServerConfigResponse
 - `Infrastructure/Helpers/HashHelper.cs` - SHA-256 hashing
+- `Infrastructure/Mappers/TierMapper.cs` - Tier entity ↔ TierResponse
 
 ---
 
 ## Next Steps (Priority Order)
 
-### SRP Refactoring — Finish
-1. Investigate `GetBattleReportResponseAsync` — is it duplicated in `BattleReportService`?
-2. Create `UploadResponseHelper` and move `CreateErrorResponse` into it
-
-### Phase 3: Discord Bot — Remaining API-side
-3. **`UserController`** — add `POST /api/user/get-or-create` endpoint
-4. **`DiscordServerController`** — `POST /api/discord-server/config` + `GET /api/discord-server/{id}`
-5. **`Program.cs`** — register `IDiscordServerService` in DI
+### Tier Management — Finish
+1. **`TiersController`** — Add remaining endpoints: Create, Update, Delete, AssignToUser, AssignToServer
+2. **Consider `ErrorResponse` DTO** — universal error shape instead of `new { error = "..." }` (discuss with senior dev)
 
 ### Phase 3: Bot Project
-6. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
-7. **`ApiClient`** — Typed HttpClient for all API calls
-8. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
-9. **`/setup` slash command** — `SetupModule.cs`
-10. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
-11. **`/reports` slash command** — `ReportsModule.cs`
-12. **Error reporting** — `ErrorReportingService.cs`
-13. **Polish** — Caching, rate limiting, graceful shutdown, logging
+3. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
+2. **`ApiClient`** — Typed HttpClient for all API calls
+3. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
+4. **`/setup` slash command** — `SetupModule.cs`
+5. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
+6. **`/reports` slash command** — `ReportsModule.cs`
+7. **Error reporting** — `ErrorReportingService.cs`
+8. **Polish** — Caching, rate limiting, graceful shutdown, logging
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish
@@ -165,4 +159,4 @@ See `.claude/docs/code-standards.md`:
 **Purpose:** Portfolio + Real Use (gaming group)
 **Timeline:** January 2026 - March 2026 (estimated)
 **Current Phase:** 3 In Progress
-**Next Milestone:** Finish SRP refactoring, then UserController + DiscordServerController + DI registration, then start Bot project
+**Next Milestone:** Bot project implementation
