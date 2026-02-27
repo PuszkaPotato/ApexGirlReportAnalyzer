@@ -5,7 +5,6 @@ using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Entities;
 using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace ApexGirlReportAnalyzer.Infrastructure.Services;
