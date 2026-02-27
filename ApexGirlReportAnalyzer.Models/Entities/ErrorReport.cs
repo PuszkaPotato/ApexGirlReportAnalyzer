@@ -1,18 +1,16 @@
-﻿namespace ApexGirlReportAnalyzer.Models.Entities
+namespace ApexGirlReportAnalyzer.Models.Entities;
+
+public class ErrorReport : BaseEntity
 {
-    public class ErrorReport : BaseEntity
-    {
-        public required string ReportedIssue { get; set; }
-        public string? CorrectedData { get; set; }
-        public DateTime? ResolvedAt { get; set; }
+    public required string ReportedIssue { get; set; }
+    public string? CorrectedData { get; set; }
+    public DateTime? ResolvedAt { get; set; }
 
-        // Foreign Keys
-        public Guid UploadId { get; set; }
-        public Guid UserId { get; set; }
+    // Foreign Keys
+    public Guid UploadId { get; set; }
+    public Guid UserId { get; set; }
 
-        // Navigation properties
-        public Upload Upload { get; set; } = null!;
-        public User User { get; set; } = null!;
-
-    }
+    // Navigation properties
+    public Upload Upload { get; set; } = null!;
+    public User User { get; set; } = null!;
 }

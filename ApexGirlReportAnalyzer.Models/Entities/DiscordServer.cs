@@ -1,26 +1,25 @@
-﻿using ApexGirlReportAnalyzer.Models.Enums;
+using ApexGirlReportAnalyzer.Models.Enums;
 
-namespace ApexGirlReportAnalyzer.Models.Entities
+namespace ApexGirlReportAnalyzer.Models.Entities;
+
+public class DiscordServer : BaseEntity
 {
-    public class DiscordServer : BaseEntity
-    {
-        // Regular properties (columns in database)
-        public string DiscordServerId { get; set; } = string.Empty;
-        public string OwnerDiscordId { get; set; } = string.Empty;
-        public PrivacyScope DefaultReportPrivacy { get; set; } = PrivacyScope.Public;
-        public DateTime? DeletedAt { get; set; } // Soft delete
-        public DateTime? UpdatedAt { get; set; }
+    // Regular properties (columns in database)
+    public string DiscordServerId { get; set; } = string.Empty;
+    public string OwnerDiscordId { get; set; } = string.Empty;
+    public PrivacyScope DefaultReportPrivacy { get; set; } = PrivacyScope.Public;
+    public DateTime? DeletedAt { get; set; } // Soft delete
+    public DateTime? UpdatedAt { get; set; }
 
-        // Bot configuration
-        public string? UploadChannelId { get; set; }
-        public string? AllowedRoleId { get; set; }
-        public string? LogChannelId { get; set; }
+    // Bot configuration
+    public string? UploadChannelId { get; set; }
+    public string? AllowedRoleId { get; set; }
+    public string? LogChannelId { get; set; }
 
-        // Foreign Key (nullable - server might not have tier!)
-        public Guid? ServerTierId { get; set; }
+    // Foreign Key (nullable - server might not have tier!)
+    public Guid? ServerTierId { get; set; }
 
-        // Navigation properties (relationships)
-        public Tier? Tier { get; set; }
-        public ICollection<AnalyticsEvent> AnalyticsEvents { get; set; } = new List<AnalyticsEvent>();
-    }
+    // Navigation properties (relationships)
+    public Tier? Tier { get; set; }
+    public ICollection<AnalyticsEvent> AnalyticsEvents { get; set; } = new List<AnalyticsEvent>();
 }

@@ -1,18 +1,17 @@
-﻿namespace ApexGirlReportAnalyzer.Models.Entities
+namespace ApexGirlReportAnalyzer.Models.Entities;
+
+public class BattleReport : BaseEntity
 {
-    public class BattleReport : BaseEntity
-    {
-        public DateTime BattleDate { get; set; }
-        public string BattleType { get; set; } = string.Empty;
-        public DateTime? DeletedAt { get; set; }
+    public DateTime BattleDate { get; set; }
+    public string BattleType { get; set; } = string.Empty;
+    public DateTime? DeletedAt { get; set; }
 
-        // Foreign Keys
-        public Guid UploadId { get; set; }
+    // Foreign Keys
+    public Guid UploadId { get; set; }
 
-        // Navigation properties
-        public Upload Upload { get; set; } = null!;
+    // Navigation properties
+    public Upload Upload { get; set; } = null!;
 
-        // Relationships
-        public ICollection<BattleSide> BattleSides { get; set; } = new List<BattleSide>();
-    }
+    // Relationships
+    public ICollection<BattleSide> BattleSides { get; set; } = new List<BattleSide>();
 }
