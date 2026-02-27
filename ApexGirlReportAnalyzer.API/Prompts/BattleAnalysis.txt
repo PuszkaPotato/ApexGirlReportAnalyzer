@@ -15,7 +15,7 @@ Extract the following information and return it as valid JSON (and ONLY JSON, no
 
 {
     \"battleType\": \"string (e.g., Parking War, Great Win, etc.)\",
-    \"battleDate\": \"strict ISO 8601 datetime from screenshot\",
+    \"battleDate\": \"strict ISO 8601 datetime from screenshot in format YYYY-MM-DDTHH:MMZ\",
     \"player\": {
         \"username\": \"string (username ONLY, without group tag)\",
         \"groupTag\": \"string or null (e.g., CTS, ALTR - without brackets)\",

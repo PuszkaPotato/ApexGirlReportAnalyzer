@@ -230,6 +230,8 @@ public class OpenAIService : IOpenAIService
                             "o", // round-trip
                             "yyyy-MM-ddTHH:mm:ssK",
                             "yyyy-MM-ddTHH:mm:ssZ",
+                            "yyyy-MM-ddTHH:mmZ",
+                            "yyyy-MM-ddTHH:mm",
                             "yyyy-MM-dd",
                             "MM/dd/yyyy",
                             "dd MMM yyyy",
