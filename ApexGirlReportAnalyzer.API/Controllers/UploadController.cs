@@ -95,7 +95,11 @@ public class UploadController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during upload processing for user {UserId}", userId);
-            return CreateErrorResponse(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new UploadResponse
+            {
+                Success = false,
+                ErrorMessage = "An unexpected error occurred during upload processing"
+            });
         }
     }
 
@@ -220,47 +224,11 @@ public class UploadController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during batch upload processing for user {UserId}", userId);
-            return BadRequest(new BatchUploadResponse
+            return StatusCode(StatusCodes.Status500InternalServerError, new BatchUploadResponse
             {
                 Success = false,
-                ErrorMessage = CreateErrorMessage(ex)
+                ErrorMessage = "An unexpected error occurred during batch upload processing"
             });
         }
     }
-
-    #region Private Helper Methods
-
-    /// <summary>
-    /// Creates appropriate error response based on build configuration
-    /// </summary>
-    private IActionResult CreateErrorResponse(Exception ex)
-    {
-#if DEBUG
-        return BadRequest(new UploadResponse
-        {
-            Success = false,
-            ErrorMessage = $"{ex.Message} | {ex.InnerException?.Message}"
-        });
-#else
-        return BadRequest(new UploadResponse
-        {
-            Success = false,
-            ErrorMessage = "An unexpected error occurred during upload processing"
-        });
-#endif
-    }
-
-    /// <summary>
-    /// Creates error message based on build configuration
-    /// </summary>
-    private static string CreateErrorMessage(Exception ex)
-    {
-#if DEBUG
-        return $"{ex.Message} | {ex.InnerException?.Message}";
-#else
-        return "An unexpected error occurred during batch upload processing";
-#endif
-    }
-
-    #endregion
 }
