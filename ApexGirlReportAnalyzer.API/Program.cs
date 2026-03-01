@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Reflection;
 using ApexGirlReportAnalyzer.API.Authentication;
 using ApexGirlReportAnalyzer.API.Helpers;
 using ApexGirlReportAnalyzer.Core.Interfaces;
@@ -34,6 +35,9 @@ builder.Services.AddControllers()
 
 builder.Services.AddSwaggerGen(options =>
 {
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "ApexGirlReportAnalyzer API", Version = "v1" });
     options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
     {
