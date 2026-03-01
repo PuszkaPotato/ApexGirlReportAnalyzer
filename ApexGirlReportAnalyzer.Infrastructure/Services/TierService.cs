@@ -11,14 +11,11 @@ namespace ApexGirlReportAnalyzer.Infrastructure.Services;
 
 public class TierService : ITierService
 {
-    private readonly ILogger<TierService> _logger;
     private readonly AppDbContext _context;
 
-    public TierService(
-        ILogger<TierService> logger, 
+    public TierService( 
         AppDbContext context)
     {
-        _logger = logger;
         _context = context;
     }
 
@@ -108,13 +105,19 @@ public class TierService : ITierService
         return TierMapper.ToDto(tier);
     }
 
-    public async Task<bool> DeleteTierAsync(Guid tierId)
+    public async Task<DeleteTierResult> DeleteTierAsync(Guid tierId)
     {
 
-       if(await _context.Tiers.Where(t => t.Id == tierId).ExecuteDeleteAsync() == 0)
-            return false;
+        if(await _context.Users.AnyAsync(u => u.TierId == tierId))
+            return DeleteTierResult.InUse;
 
-        return true;
+        if(await _context.DiscordServers.AnyAsync(s => s.ServerTierId == tierId))
+            return DeleteTierResult.InUse;
+
+        if (await _context.Tiers.Where(t => t.Id == tierId).ExecuteDeleteAsync() == 0)
+            return DeleteTierResult.NotFound;
+
+        return DeleteTierResult.Success;
     }
 
     public async Task<bool> AssignTierToUserAsync(string discordUserId, Guid tierId)
@@ -147,6 +150,31 @@ public class TierService : ITierService
 
         server.Tier = tier;
         await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> MigrateTierAssigneesAsync(Guid sourceTierId, Guid? targetTierId = null)
+    {
+        Tier? targetTier;
+        var sourceTier = await _context.Tiers.FirstOrDefaultAsync(t => t.Id == sourceTierId);
+        if (sourceTier == null)
+            return false;
+        if (targetTierId == null)
+        {
+            targetTier = await _context.Tiers.FirstOrDefaultAsync(t => t.IsDefault);
+            if (targetTier == null)
+                return false;
+
+            targetTierId = targetTier.Id;
+        }
+        await _context.Users
+            .Where(u => u.TierId == sourceTierId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.TierId, targetTierId.Value));
+        
+        await _context.DiscordServers
+            .Where(s => s.ServerTierId == sourceTierId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ServerTierId, targetTierId.Value));
 
         return true;
     }

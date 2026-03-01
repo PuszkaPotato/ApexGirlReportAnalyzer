@@ -1,41 +1,196 @@
-﻿using ApexGirlReportAnalyzer.Infrastructure.Data;
+﻿using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class TiersController(AppDbContext context, ILogger<TiersController> logger) : ControllerBase
+public class TiersController : ControllerBase
 {
-    private readonly AppDbContext _context = context;
-    private readonly ILogger<TiersController> _logger = logger;
+    private readonly ILogger<TiersController> _logger;
+    private readonly ITierService _tierService;
+
+    public TiersController( 
+        ILogger<TiersController> logger,
+        ITierService tierService)
+    {
+        _logger = logger;
+        _tierService = tierService;
+    }
 
     /// <summary>
-    /// Get all tiers with their limits
+    /// Get all the tiers and their information.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<TierResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTiers()
     {
-        var tiers = await _context.Tiers
-            .Include(t => t.TierLimits)
-            .Select(t => new TierResponse
-            {
-                Id = t.Id,
-                Name = t.Name,
-                Limits = t.TierLimits.Select(l => new TierLimitResponse
-                {
-                    Scope = l.Scope.ToString(),
-                    DailyRequestLimit = l.DailyRequestLimit,
-                    MonthlyRequestLimit = l.MonthlyRequestLimit
-                }).ToList()
-            })
-            .ToListAsync();
+        try
+        {
+            var tiers = await _tierService.GetTiersAsync();
 
-        return Ok(tiers);
+            return Ok(tiers);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while retrieving tiers.");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Create a new tier with the specified details.
+    /// </summary>
+    /// 
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateTier([FromBody] CreateTierRequest request)
+    {
+        try
+        {
+            var createdTier = await _tierService.CreateTierAsync(request);
+            if (createdTier == null)
+            {
+                return BadRequest("Failed to create tier. Please check the provided details and try again.");
+            }
+            return Ok(createdTier);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while creating a new tier.");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Update an existing tier with the specified details.
+    /// </summary>
+    /// 
+    [HttpPut("{tierId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateTier(Guid tierId, [FromBody] UpdateTierRequest request)
+    {
+        try
+        {
+            var updatedTier = await _tierService.UpdateTierAsync(tierId, request);
+            if (updatedTier == null)
+            {
+                return NotFound("Failed to update tier. Please check the provided details and try again.");
+            }
+            return Ok(updatedTier);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while updating the tier with ID {TierId}.", tierId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Assign a tier to a user.
+    /// </summary>
+    /// 
+    [HttpPut("{tierId}/assign-user/{discordUserId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AssignTierToUser([FromRoute] string discordUserId, [FromRoute] Guid tierId)
+    {
+        try
+        {
+            var result = await _tierService.AssignTierToUserAsync(discordUserId, tierId);
+            if (!result)
+            {
+                return BadRequest("Failed to assign tier to user. Please check the provided details and try again.");
+            }
+            return Ok("Tier assigned to user successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while assigning tier with ID {TierId} to user with Discord ID {DiscordUserId}.", tierId, discordUserId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Assign a tier to a server.
+    /// </summary>
+    [HttpPut("{tierId}/assign-server/{discordServerId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AssignTierToServer([FromRoute] string discordServerId, [FromRoute] Guid tierId)
+    {
+        try
+        {
+            var result = await _tierService.AssignTierToServerAsync(discordServerId, tierId);
+            if (!result)
+            {
+                return BadRequest("Failed to assign tier to server. Please check the provided details and try again.");
+            }
+            return Ok("Tier assigned to server successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while assigning tier with ID {TierId} to server with Discord ID {DiscordServerId}.", tierId, discordServerId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Delete a tier by its ID.
+    /// </summary>
+    [HttpDelete("{tierId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeleteTier(Guid tierId)
+    {
+        try
+        {
+            var result = await _tierService.DeleteTierAsync(tierId);
+            if (result == DeleteTierResult.NotFound)
+            {
+                return NotFound("Failed to delete tier. Please check the provided details and try again.");
+            } else if (result == DeleteTierResult.InUse)
+            {
+                return Conflict("Failed to delete tier. The tier is currently in use and cannot be deleted.");
+            }
+            return Ok("Tier deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting the tier with ID {TierId}.", tierId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
+    }
+
+    /// <summary>
+    /// Migrate all assignees (users and servers) from the source tier to the target tier. If targetTierId is null, the assignees will be assigned to a default tier.
+    /// </summary>
+    [HttpPut("migrate-assignees/{sourceTierId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MigrateTierAssignees(Guid sourceTierId, [FromQuery] Guid? targetTierId = null)
+    {
+        try
+        {
+            var result = await _tierService.MigrateTierAssigneesAsync(sourceTierId, targetTierId);
+            if (!result)
+            {
+                return NotFound("Failed to migrate tier assignees. Please check the provided details and try again.");
+            }
+            return Ok("Tier assignees migrated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while migrating assignees from tier with ID {SourceTierId} to tier with ID {TargetTierId}.", sourceTierId, targetTierId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
     }
 }
