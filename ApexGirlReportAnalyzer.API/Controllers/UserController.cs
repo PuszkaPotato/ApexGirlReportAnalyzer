@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Handles user management including retrieval and quota checking.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -13,6 +16,7 @@ public class UserController : ControllerBase
     private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
 
+    /// <inheritdoc />
     public UserController(IUserService userService, ILogger<UserController> logger)
     {
         _userService = userService;

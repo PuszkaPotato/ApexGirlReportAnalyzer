@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Provides health check and status endpoints.
+/// </summary>
 [AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]

@@ -7,10 +7,14 @@ using System.Security.Claims;
 
 namespace ApexGirlReportAnalyzer.API.Authentication;
 
+/// <summary>
+/// Handles API key authentication by validating the X-API-Key header against stored keys in the database.
+/// </summary>
 public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     private readonly AppDbContext _context;
 
+    /// <inheritdoc />
     public ApiKeyAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -21,6 +25,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationS
         _context = context;
     }
 
+    /// <inheritdoc />
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue("X-API-Key", out var apiKeyHeaderValues))

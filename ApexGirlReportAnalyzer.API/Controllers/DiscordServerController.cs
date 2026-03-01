@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Handles Discord server configuration management.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -12,6 +15,8 @@ public class DiscordServerController : ControllerBase
 {
     private readonly ILogger<DiscordServerController> _logger;
     private readonly IDiscordServerService _discordServerService;
+
+    /// <inheritdoc />
     public DiscordServerController(IDiscordServerService discordServerService, ILogger<DiscordServerController> logger)
     {
         _logger = logger;

@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Handles tier management including creation, updates, deletion, and assignment to users and servers.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -14,7 +17,8 @@ public class TiersController : ControllerBase
     private readonly ILogger<TiersController> _logger;
     private readonly ITierService _tierService;
 
-    public TiersController( 
+    /// <inheritdoc />
+    public TiersController(
         ILogger<TiersController> logger,
         ITierService tierService)
     {

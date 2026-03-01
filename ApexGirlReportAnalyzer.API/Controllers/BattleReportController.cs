@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Handles retrieval and querying of battle reports.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -13,6 +16,7 @@ public class BattleReportController : ControllerBase
     private readonly ILogger<BattleReportController> _logger;
     private readonly IBattleReportService _battleReportService;
 
+    /// <inheritdoc />
     public BattleReportController(ILogger<BattleReportController> logger, IBattleReportService battleReportService)
     {
         _logger = logger;
@@ -30,6 +34,8 @@ public class BattleReportController : ControllerBase
     /// <param name="participant">Battle reports involving the Player's name as a participant</param>
     /// <param name="inGameId">Battle reports involving the Player's in-game ID</param>
     /// <param name="groupTag">Battle report by group Tag</param>
+    /// <param name="limit">Maximum number of reports to return (default 10)</param>
+    /// <param name="offset">Number of reports to skip for pagination (default 0)</param>
     [HttpGet]
     public async Task<IActionResult> GetBattleReports(
         [FromQuery] Guid? uploadId = null,
@@ -63,6 +69,10 @@ public class BattleReportController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Get a single battle report by its ID.
+    /// </summary>
+    /// <param name="reportId">The ID of the battle report to retrieve.</param>
     [HttpGet("reportId")]
     public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId)
     {

@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
+/// <summary>
+/// Handles screenshot uploads for battle report analysis.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -14,6 +17,7 @@ public class UploadController : ControllerBase
     private readonly IUploadService _uploadService;
     private readonly ILogger<UploadController> _logger;
 
+    /// <inheritdoc />
     public UploadController(IUploadService uploadService, ILogger<UploadController> logger)
     {
         _uploadService = uploadService;
@@ -30,6 +34,7 @@ public class UploadController : ControllerBase
     /// <param name="enemyInGameId">Optional: Enemy's in-game ID</param>
     /// <param name="discordChannelId">Optional: Discord channel ID where screenshot was posted</param>
     /// <param name="discordMessageId">Optional: Discord message ID of the screenshot</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Analysis results or error</returns>
     [HttpPost]
     [ProducesResponseType(typeof(UploadResponse), StatusCodes.Status200OK)]
@@ -100,6 +105,7 @@ public class UploadController : ControllerBase
     /// <param name="images">Screenshot image files (PNG or JPEG, max 20)</param>
     /// <param name="userId">User ID making the upload</param>
     /// <param name="discordServerId">Optional: Discord server ID if uploaded via bot</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Batch analysis results or error</returns>
     [HttpPost("batch")]
     [ProducesResponseType(typeof(BatchUploadResponse), StatusCodes.Status200OK)]
