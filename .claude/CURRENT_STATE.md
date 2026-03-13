@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** February 27, 2026
+**Last Updated:** March 13, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** Tier management in progress — TiersController endpoints remaining
+**Status:** Config classes + ApiClient complete — `DiscordBotService` is next on `feature/discord-bot` branch
 
 ---
 
@@ -57,7 +57,58 @@
 
 ---
 
-## Recent Session Accomplishments (Feb 23 — evening)
+## Recent Session Accomplishments (Mar 13)
+
+### Bot Foundation — Completed
+- Created `Configuration/DiscordBotOptions.cs` and `Configuration/ApiOptions.cs` (Options pattern, wired with `Configure<T>`)
+- Created `Http/ApiClient.cs` — typed HttpClient covering all API endpoints the bot needs:
+  - `GetOrCreateUserAsync` — `POST /api/user/get-or-create`
+  - `GetUserQuotaAsync` — `GET /api/user/quota/{userId}`
+  - `UploadScreenshotAsync` — `POST /api/upload` (multipart/form-data)
+  - `GetServerConfigAsync` — `GET /api/discordserver/{id}` (returns null on 404)
+  - `SetServerConfigAsync` — `POST /api/discordserver/config`
+  - `GetBattleReportsAsync` — `GET /api/battlereport` (with filters + pagination)
+- Updated `Program.cs` to register options and `ApiClient` typed HttpClient with base URL + API key header
+- Updated `appsettings.json` with `Bot:Token` and `Api:ApiKey` placeholder entries pointing to user secrets
+- Clean build, zero warnings
+
+### Permissions
+- Added `Edit` and `Write` to `.claude/settings.local.json` — no longer prompts for file operations
+
+---
+
+## Previous Session Accomplishments (Mar 1)
+
+### Tier Management — Completed
+- Built full `ITierService`, `TierService`, `TierMapper`
+- Created `CreateTierRequest`, `UpdateTierRequest`, `TierLimitRequest` DTOs
+- Added `DeleteTierResult` enum for 404/409 differentiation
+- Added `MigrateTierAssigneesAsync` for moving users/servers between tiers
+- Refactored `TiersController` from direct `AppDbContext` to service layer
+- Registered `ITierService` in `Program.cs`
+
+### XML Documentation
+- Enabled `GenerateDocumentationFile` in API `.csproj`
+- Added `IncludeXmlComments` to Swagger
+- Added `/// <summary>` and `/// <inheritdoc />` to all controllers and helpers
+- Fixed CS1587 (doc comments placed after attributes instead of before)
+- Fixed CS1573 (missing `<param>` tags for `limit`, `offset`, `cancellationToken`)
+- Zero CS1591/CS1573/CS1587 warnings remaining
+
+### UploadController cleanup
+- Removed `#if DEBUG` compile-time error helpers
+- Replaced with consistent `StatusCode(500, ...)` + generic message pattern
+- Logger already captures full exception detail — no need to leak it to clients
+
+### Bot project prep
+- Created `feature/discord-bot` branch
+- Discord.Net 3.18.0, `Microsoft.Extensions.Http`, Models reference already in place
+- User secrets ID already configured in `.csproj`
+- Clarified config split: `BaseUrl` → `appsettings.json`, `ApiKey`/`BotToken` → user secrets
+
+---
+
+## Previous Session Accomplishments (Feb 23 — evening)
 
 ### SRP Refactoring (based on senior dev feedback)
 - **Removed `AnalyzeWithOpenAIAsync` wrapper** — `UploadService` now calls `_openAIService.AnalyzeScreenshotAsync` directly
@@ -96,8 +147,7 @@
 ## What Doesn't Work Yet
 
 ### Not Implemented
-- **TiersController** — `GetTiers` done, remaining endpoints (Create, Update, Delete, AssignToUser, AssignToServer) still needed
-- **Bot project** — scaffold exists but implementation not started
+- **Bot project** — scaffold exists, configuration classes next
 - **Testing** - No unit or integration tests
 - **Analytics Endpoints** - Stats and aggregations
 - **Admin Features** - No admin panel
@@ -132,19 +182,14 @@ See `.claude/docs/code-standards.md`:
 
 ## Next Steps (Priority Order)
 
-### Tier Management — Finish
-1. **`TiersController`** — Add remaining endpoints: Create, Update, Delete, AssignToUser, AssignToServer
-2. **Consider `ErrorResponse` DTO** — universal error shape instead of `new { error = "..." }` (discuss with senior dev)
-
-### Phase 3: Bot Project
-3. **Bot scaffold** — Configuration classes (`DiscordBotOptions`, `ApiOptions`), `appsettings.json`, user secrets
-2. **`ApiClient`** — Typed HttpClient for all API calls
-3. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle
+### Phase 3: Bot Project (branch: `feature/discord-bot`)
+1. ~~**Config classes** — `DiscordBotOptions`, `ApiOptions`; wire up `appsettings.json` + user secrets~~ ✓ Done
+2. ~~**`ApiClient`** — Typed HttpClient for all API calls~~ ✓ Done
+3. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle ← **START HERE**
 4. **`/setup` slash command** — `SetupModule.cs`
 5. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
 6. **`/reports` slash command** — `ReportsModule.cs`
-7. **Error reporting** — `ErrorReportingService.cs`
-8. **Polish** — Caching, rate limiting, graceful shutdown, logging
+7. **Polish** — Graceful shutdown, logging
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish

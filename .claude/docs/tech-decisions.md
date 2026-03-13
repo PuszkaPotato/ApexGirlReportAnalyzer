@@ -250,6 +250,74 @@ Prompts/
 
 ---
 
+---
+
+## Phase 3: Discord Bot Decisions
+
+### Decision 24: Typed HttpClient for ApiClient
+
+**Chosen:** `AddHttpClient<ApiClient>` (typed HttpClient)
+**Alternatives Considered:** `IHttpClientFactory` with named client, static `HttpClient`, manual `new HttpClient()`
+**Date:** March 2026
+
+**Reasoning:**
+- **DI-friendly** — `ApiClient` is registered as a service, injected wherever needed
+- **Encapsulation** — All API communication lives in one class; callers don't deal with URLs or serialization
+- **Lifetime managed** — `IHttpClientFactory` handles socket exhaustion internally (avoids DNS stale issue with long-lived clients)
+- **Testable** — Can mock `ApiClient` in tests; or inject a custom `HttpMessageHandler` for integration tests
+
+**Configuration pattern:**
+```csharp
+builder.Services.AddHttpClient<ApiClient>((serviceProvider, client) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(config["Api:BaseUrl"]!);
+    client.DefaultRequestHeaders.Add("X-API-Key", config["Api:ApiKey"]!);
+});
+```
+
+**Why not IHttpClientFactory with named client:**
+- Named clients still require manual `_factory.CreateClient("name")` at every call site
+- Typed client gives the same lifecycle benefits with better encapsulation
+
+---
+
+### Decision 25: Options Pattern for Bot Configuration
+
+**Chosen:** `Configure<T>(config.GetSection(...))` with `IOptions<T>` injection
+**Alternatives Considered:** Inject `IConfiguration` directly, read config values inline
+**Date:** March 2026
+
+**Reasoning:**
+- **Strongly typed** — `DiscordBotOptions.Token` vs `config["Bot:Token"]` — no magic strings, compiler-checked
+- **Consistent with .NET idioms** — Standard pattern across ASP.NET Core ecosystem
+- **Encapsulates config shape** — Options class documents what the section contains
+- **Validated at startup** — Can add `ValidateDataAnnotations()` or `ValidateOnStart()` later
+
+**Config split strategy:**
+- `appsettings.json` — non-secret values (`BaseUrl`, `Name`) with `SET_IN_USER_SECRETS` placeholders for secret fields
+- User secrets — `Bot:Token`, `Api:ApiKey` (never committed)
+
+---
+
+### Decision 26: ApiClient Returns Null on Failure
+
+**Chosen:** Return `null` (or `T?`) when an API call fails; log the failure
+**Alternatives Considered:** Throw exceptions on non-2xx, return result wrapper (`Result<T, Error>`)
+**Date:** March 2026
+
+**Reasoning:**
+- **Bot context** — Discord command handlers need to reply to users gracefully; null is easy to check and handle
+- **Simplicity** — Result wrappers add overhead for a project at this stage
+- **Special case: 404** — `GetServerConfigAsync` returns `null` on 404 specifically (expected case: server not yet set up)
+- **Logging** — Non-success status codes are logged as warnings so issues are traceable
+
+**Trade-off acknowledged:**
+- Caller can't distinguish "API returned 400" from "network error" — both return null
+- Acceptable now; can add error details to the return type later if needed
+
+---
+
 ## Revision History
 
 | Date | Decision | Change | Reason |
@@ -257,3 +325,4 @@ Prompts/
 | Jan 20, 2026 | Initial decisions | First draft | Project start |
 | Jan 25, 2026 | Decisions 18-23 | Phase 1 completion | Model selection, validation strategy, architecture refinements |
 | Jan 25, 2026 | Lessons Learned | Phase 1 documented | Capture learnings while fresh |
+| Mar 13, 2026 | Decisions 24-26 | Phase 3 bot decisions | Typed HttpClient, Options pattern, null-on-failure strategy |
