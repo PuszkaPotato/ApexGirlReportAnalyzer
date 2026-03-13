@@ -80,7 +80,7 @@ This document tracks skills learned and interview preparation progress throughou
 - [x] **RESTful principles** - Resource-based URLs (/api/upload, /api/user)
 - [x] **HTTP status codes** - 200 (success), 400 (bad request), 429 (rate limit), 500 (error)
 - [x] **Request/response patterns** - DTOs for all requests/responses
-- [x] **Authentication** - API key planned (not yet implemented)
+- [x] **Authentication** - Custom `ApiKeyAuthenticationHandler` (validates `X-API-Key` header against DB, updates `LastUsedAt`)
 - [x] **Rate limiting** - Quota system (daily/monthly limits per tier)
 
 ### OpenAI API Integration
@@ -90,6 +90,14 @@ This document tracks skills learned and interview preparation progress throughou
 - [x] **Cost management** - Token counting, cost calculation per request
 - [x] **Error handling** - Try-catch, invalid image detection, graceful failures
 - [ ] **Rate limit handling** - OpenAI hasn't rate-limited yet (may add exponential backoff later)
+
+### Typed HttpClient & Options Pattern (Phase 3)
+- [x] **Options pattern** - `Configure<T>(config.GetSection(...))` to bind config to strongly typed classes
+- [x] **Typed HttpClient** - `AddHttpClient<T>((sp, client) => {...})` with base address and default headers
+- [x] **User secrets** - Split: `appsettings.json` for non-secrets, `dotnet user-secrets` for tokens/keys
+- [x] **Multipart form data** - `MultipartFormDataContent` for sending files + fields via HttpClient
+- [x] **JSON deserialization** - `JsonSerializerOptions` with `PropertyNameCaseInsensitive` to handle camelCase API → PascalCase DTOs
+- [ ] **BackgroundService / Worker Service** - Up next (`DiscordBotService`)
 
 ---
 
