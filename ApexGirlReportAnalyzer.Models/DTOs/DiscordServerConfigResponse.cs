@@ -1,4 +1,6 @@
-﻿namespace ApexGirlReportAnalyzer.Models.DTOs;
+﻿using ApexGirlReportAnalyzer.Models.Enums;
+
+namespace ApexGirlReportAnalyzer.Models.DTOs;
 
 public class DiscordServerConfigResponse
 {
@@ -24,4 +26,8 @@ public class DiscordServerConfigResponse
     /// ServerOwnerId is the Discord ID of the server owner. This is used to ensure that only the owner can update the server configuration and manage the server's quota.
     /// </summary>
     public string OwnerDiscordId { get; set; } = null!;
+    /// <summary>
+    /// The default privacy level applied to battle reports uploaded through this server. Controls who can view the reports.
+    /// </summary>
+    public PrivacyScope DefaultReportPrivacy { get; set; }
 }

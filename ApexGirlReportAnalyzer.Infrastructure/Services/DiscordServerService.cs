@@ -3,7 +3,6 @@ using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Infrastructure.Mappers;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Entities;
-using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +41,7 @@ public class DiscordServerService : IDiscordServerService
             server.UploadChannelId = configRequest.UploadChannelId;
             server.LogChannelId = configRequest.LogChannelId;
             server.OwnerDiscordId = configRequest.OwnerDiscordId;
+            server.DefaultReportPrivacy = configRequest.DefaultReportPrivacy;
             server.UpdatedAt = DateTime.UtcNow;
             _logger.LogInformation("Updated config for Discord Server ID: {DiscordServerId}", configRequest.DiscordServerId);
         }
@@ -54,7 +54,7 @@ public class DiscordServerService : IDiscordServerService
                 UploadChannelId = configRequest.UploadChannelId,
                 LogChannelId = configRequest.LogChannelId,
                 OwnerDiscordId = configRequest.OwnerDiscordId,
-                DefaultReportPrivacy = PrivacyScope.Public,
+                DefaultReportPrivacy = configRequest.DefaultReportPrivacy,
                 CreatedAt = DateTime.UtcNow,
             };
             await _context.DiscordServers.AddAsync(server);

@@ -1,5 +1,6 @@
 using ApexGirlReportAnalyzer.Models.DTOs;
 using ApexGirlReportAnalyzer.Models.Entities;
+using ApexGirlReportAnalyzer.Models.Enums;
 
 
 namespace ApexGirlReportAnalyzer.Infrastructure.Mappers;
@@ -22,7 +23,8 @@ public static class DiscordServerMapper
             UploadChannelId = server.UploadChannelId ?? string.Empty,
             AllowedRoleId = server.AllowedRoleId,
             LogChannelId = server.LogChannelId,
-            OwnerDiscordId = server.OwnerDiscordId
+            OwnerDiscordId = server.OwnerDiscordId,
+            DefaultReportPrivacy = server.DefaultReportPrivacy
         };
     }
 }
