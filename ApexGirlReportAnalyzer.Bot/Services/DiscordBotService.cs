@@ -1,4 +1,5 @@
-﻿using ApexGirlReportAnalyzer.Bot.Configuration;
+using ApexGirlReportAnalyzer.Bot.Configuration;
+using ApexGirlReportAnalyzer.Bot.Handlers;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -17,24 +18,33 @@ public class DiscordBotService : BackgroundService
 
     private readonly InteractionService _interactionService;
 
-    public DiscordBotService(DiscordLogService discordLogService, IOptions<DiscordBotOptions> options, InteractionService interactionService)
+    private readonly IServiceProvider _serviceProvider;
+
+    private readonly ScreenshotHandler _screenshotHandler;
+
+    public DiscordBotService(
+        DiscordSocketClient client,
+        DiscordLogService discordLogService,
+        IServiceProvider serviceProvider,
+        IOptions<DiscordBotOptions> options,
+        InteractionService interactionService,
+        ScreenshotHandler screenshotHandler)
     {
+        _client = client;
         _discordLogService = discordLogService;
+        _serviceProvider = serviceProvider;
         _options = options;
         _interactionService = interactionService;
-        _client = new DiscordSocketClient(new DiscordSocketConfig
-        {
-            LogLevel = LogSeverity.Info,
-            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent
-        });
-        _client.Log += _discordLogService.LogAsync;
+        _screenshotHandler = screenshotHandler;
 
+        _client.Log += _discordLogService.LogAsync;
         _client.Ready += OnReadyAsync;
+        _client.MessageReceived += message => Task.Run(() => _screenshotHandler.MessageReceived(message));
 
         _client.InteractionCreated += async (interaction) =>
         {
             var context = new SocketInteractionContext(_client, interaction);
-            await _interactionService.ExecuteCommandAsync(context, null);
+            await _interactionService.ExecuteCommandAsync(context, _serviceProvider);
         };
     }
 
@@ -60,12 +70,12 @@ public class DiscordBotService : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
-    private async Task RegisterCommands() 
+    private async Task RegisterCommands()
     {
-        await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), null);
+        await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
 
 #if DEBUG
-    await _interactionService.RegisterCommandsToGuildAsync(_options.Value.TestGuildId);
+        await _interactionService.RegisterCommandsToGuildAsync(_options.Value.TestGuildId);
 #else
         await _interactionService.RegisterCommandsGloballyAsync();
 #endif
