@@ -18,6 +18,6 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString("yyyy-MM-dd'T'HH:mm:ss'z'", CultureInfo.InvariantCulture));
+        writer.WriteStringValue(value.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture));
     }
 }
