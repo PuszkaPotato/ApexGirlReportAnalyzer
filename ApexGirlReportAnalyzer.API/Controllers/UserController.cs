@@ -36,7 +36,7 @@ public class UserController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(discordId))
             {
-                return BadRequest(new { error = "Valid discord ID is required" });
+                return BadRequest(new ErrorResponse { Message = "Valid Discord ID is required.", Type = "ValidationError" });
             }
             var user = await _userService.GetOrCreateByDiscordIdAsync(discordId);
             return Ok(user);
@@ -44,7 +44,7 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving or creating user with ID {DiscordId}", discordId);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "An error occurred while processing the request" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing the request.", Type = "InternalServerError" });
         }
     }
 
@@ -61,7 +61,7 @@ public class UserController : ControllerBase
         {
             if (userId == Guid.Empty)
             {
-                return BadRequest(new { error = "Valid user ID is required" });
+                return BadRequest(new ErrorResponse { Message = "Valid user ID is required.", Type = "ValidationError" });
             }
 
             var quota = await _userService.GetRemainingQuotaAsync(userId);
@@ -70,7 +70,7 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving quota for user {UserId}", userId);
-            return NotFound(new { error = "User not found or quota could not be retrieved" });
+            return NotFound(new ErrorResponse { Message = "User not found or quota could not be retrieved.", Type = "NotFound" });
         }
     }
 }

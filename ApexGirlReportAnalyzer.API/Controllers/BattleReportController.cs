@@ -78,7 +78,7 @@ public class BattleReportController : ControllerBase
     {
         var report = await _battleReportService.GetBattleReportByIdAsync(reportId);
         if (report == null)
-            return NotFound(new { Message = $"Battle report with ID {reportId} not found." });
+            return NotFound(new ErrorResponse { Message = $"No battle report found with ID: {reportId}", Type = "NotFound" });
         return Ok(report);
     }
 }

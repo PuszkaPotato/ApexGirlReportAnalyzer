@@ -43,7 +43,7 @@ public class TiersController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while retrieving tiers.");
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -61,14 +61,14 @@ public class TiersController : ControllerBase
             var createdTier = await _tierService.CreateTierAsync(request);
             if (createdTier == null)
             {
-                return BadRequest("Failed to create tier. Please check the provided details and try again.");
+                return BadRequest(new ErrorResponse { Message = "A tier with that name already exists.", Type = "Conflict" });
             }
             return Ok(createdTier);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while creating a new tier.");
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -86,14 +86,14 @@ public class TiersController : ControllerBase
             var updatedTier = await _tierService.UpdateTierAsync(tierId, request);
             if (updatedTier == null)
             {
-                return NotFound("Failed to update tier. Please check the provided details and try again.");
+                return NotFound(new ErrorResponse { Message = "Tier not found.", Type = "NotFound" });
             }
             return Ok(updatedTier);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while updating the tier with ID {TierId}.", tierId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -103,7 +103,7 @@ public class TiersController : ControllerBase
     /// 
     [HttpPut("{tierId}/assign-user/{discordUserId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignTierToUser([FromRoute] string discordUserId, [FromRoute] Guid tierId)
     {
         try
@@ -111,14 +111,14 @@ public class TiersController : ControllerBase
             var result = await _tierService.AssignTierToUserAsync(discordUserId, tierId);
             if (!result)
             {
-                return BadRequest("Failed to assign tier to user. Please check the provided details and try again.");
+                return NotFound(new ErrorResponse { Message = "User or tier not found.", Type = "NotFound" });
             }
             return Ok("Tier assigned to user successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while assigning tier with ID {TierId} to user with Discord ID {DiscordUserId}.", tierId, discordUserId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -127,7 +127,7 @@ public class TiersController : ControllerBase
     /// </summary>
     [HttpPut("{tierId}/assign-server/{discordServerId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignTierToServer([FromRoute] string discordServerId, [FromRoute] Guid tierId)
     {
         try
@@ -135,14 +135,14 @@ public class TiersController : ControllerBase
             var result = await _tierService.AssignTierToServerAsync(discordServerId, tierId);
             if (!result)
             {
-                return BadRequest("Failed to assign tier to server. Please check the provided details and try again.");
+                return NotFound(new ErrorResponse { Message = "Server or tier not found.", Type = "NotFound" });
             }
             return Ok("Tier assigned to server successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while assigning tier with ID {TierId} to server with Discord ID {DiscordServerId}.", tierId, discordServerId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -160,17 +160,17 @@ public class TiersController : ControllerBase
             var result = await _tierService.DeleteTierAsync(tierId);
             if (result == DeleteTierResult.NotFound)
             {
-                return NotFound("Failed to delete tier. Please check the provided details and try again.");
+                return NotFound(new ErrorResponse { Message = "Tier not found.", Type = "NotFound" });
             } else if (result == DeleteTierResult.InUse)
             {
-                return Conflict("Failed to delete tier. The tier is currently in use and cannot be deleted.");
+                return Conflict(new ErrorResponse { Message = "The tier is currently in use and cannot be deleted.", Type = "Conflict" });
             }
             return Ok("Tier deleted successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while deleting the tier with ID {TierId}.", tierId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 
@@ -187,14 +187,14 @@ public class TiersController : ControllerBase
             var result = await _tierService.MigrateTierAssigneesAsync(sourceTierId, targetTierId);
             if (!result)
             {
-                return NotFound("Failed to migrate tier assignees. Please check the provided details and try again.");
+                return NotFound(new ErrorResponse { Message = "Source tier not found.", Type = "NotFound" });
             }
             return Ok("Tier assignees migrated successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while migrating assignees from tier with ID {SourceTierId} to tier with ID {TargetTierId}.", sourceTierId, targetTierId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while processing your request.", Type = "InternalServerError" });
         }
     }
 }

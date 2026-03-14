@@ -37,19 +37,19 @@ public class DiscordServerController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(discordServerId))
             {
-                return BadRequest(new { error = "Valid Discord Server ID is required" });
+                return BadRequest(new ErrorResponse { Message = "Valid Discord Server ID is required.", Type = "ValidationError" });
             }
             var config = await _discordServerService.GetConfigAsync(discordServerId);
             if (config == null)
             {
-                return NotFound(new { error = "No config found for the provided Discord Server ID" });
+                return NotFound(new ErrorResponse { Message = "No config found for the provided Discord Server ID.", Type = "NotFound" });
             }
             return Ok(config);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving config for Discord Server ID: {DiscordServerId}", discordServerId);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "An error occurred while retrieving the config" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while retrieving the config.", Type = "InternalServerError" });
         }
 
     }
@@ -67,7 +67,7 @@ public class DiscordServerController : ControllerBase
         {
             if (configRequest == null || string.IsNullOrWhiteSpace(configRequest.DiscordServerId))
             {
-                return BadRequest(new { error = "Valid config request with Discord Server ID is required" });
+                return BadRequest(new ErrorResponse { Message = "Valid config request with Discord Server ID is required.", Type = "ValidationError" });
             }
             var updatedConfig = await _discordServerService.SetOrUpdateConfigAsync(configRequest);
             return Ok(updatedConfig);
@@ -75,7 +75,7 @@ public class DiscordServerController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error setting/updating config for Discord Server ID: {DiscordServerId}", configRequest?.DiscordServerId);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "An error occurred while setting/updating the config" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Message = "An error occurred while setting/updating the config.", Type = "InternalServerError" });
         }
     }
 }
