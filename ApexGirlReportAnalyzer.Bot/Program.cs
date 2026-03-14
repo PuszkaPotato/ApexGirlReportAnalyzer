@@ -1,6 +1,31 @@
 using ApexGirlReportAnalyzer.Bot;
+using ApexGirlReportAnalyzer.Bot.Configuration;
+using ApexGirlReportAnalyzer.Bot.Http;
+using ApexGirlReportAnalyzer.Bot.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.Configure<DiscordBotOptions>(builder.Configuration.GetSection("Bot"));
+builder.Services.AddSingleton<DiscordLogService>();
+builder.Services.AddHostedService<DiscordBotService>();
+builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("Api"));
+
+builder.Services.AddScoped<SetupService>();
+
+builder.Services.AddHttpClient<ApiClient>((serviceProvider, client) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+
+    var baseUrl = config["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("Api:BaseUrl is not configured.");
+
+    var apiKey = config["Api:ApiKey"]
+        ?? throw new InvalidOperationException("Api:ApiKey is not configured.");
+
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+});
+
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
