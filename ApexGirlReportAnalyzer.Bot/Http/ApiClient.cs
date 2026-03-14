@@ -12,10 +12,7 @@ public class ApiClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<ApiClient> _logger;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public ApiClient(HttpClient httpClient, ILogger<ApiClient> logger)
     {
@@ -132,6 +129,33 @@ public class ApiClient
         var response = await _httpClient.GetAsync($"api/battlereport?{query}", cancellationToken);
 
         return await DeserializeResponseAsync<BattleReportListResponse>(response, nameof(GetBattleReportsAsync));
+    }
+
+    /// <summary>
+    /// Gets all tiers.
+    /// </summary>
+    public async Task<List<TierResponse>?> GetTiersAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Getting all tiers");
+
+        var response = await _httpClient.GetAsync("api/tiers", cancellationToken);
+
+        return await DeserializeResponseAsync<List<TierResponse>>(response, nameof(GetTiersAsync));
+    }
+
+    /// <summary>
+    /// Assigns a tier to a user by their Discord ID.
+    /// </summary>
+    public async Task<bool> AssignTierToUserAsync(string discordUserId, Guid tierId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Assigning tier {TierId} to user {DiscordUserId}", tierId, discordUserId);
+
+        var response = await _httpClient.PutAsync(
+            $"api/tiers/{tierId}/assign-user/{Uri.EscapeDataString(discordUserId)}",
+            null,
+            cancellationToken);
+
+        return response.IsSuccessStatusCode;
     }
 
     #region Private Helper Methods

@@ -22,6 +22,7 @@ builder.Services.AddSingleton(provider => new InteractionService(provider.GetReq
 builder.Services.AddSingleton<DiscordLogService>();
 builder.Services.AddSingleton<SetupService>();
 builder.Services.AddSingleton<ReportsService>();
+builder.Services.AddSingleton<TierService>();
 
 builder.Services.AddHttpClient<ScreenshotHandler>();
 
