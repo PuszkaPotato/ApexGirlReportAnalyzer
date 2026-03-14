@@ -45,6 +45,8 @@ public class ScreenshotHandler
         if (userMessage == null)
             return;
 
+        var processingMessage = await userMessage.ReplyAsync("Your report is being processed...");
+
         try
         {
             var uploadResult = await _apiClient.UploadScreenshotAsync(
@@ -55,12 +57,20 @@ public class ScreenshotHandler
                 imageStream: await DownloadImageAsync(attachment.Url),
                 fileName: attachment.Filename);
 
-            await userMessage.ReplyAsync(embed: BuildReportEmbed(uploadResult).Build());
+            await processingMessage.ModifyAsync(m =>
+            {
+                m.Content = string.Empty;
+                m.Embed = BuildReportEmbed(uploadResult).Build();
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error has occured while processing the upload");
-            await userMessage.ReplyAsync(embed: BuildReportEmbed(null).Build());
+            await processingMessage.ModifyAsync(m =>
+            {
+                m.Content = string.Empty;
+                m.Embed = BuildReportEmbed(null).Build();
+            });
         }
     }
 
@@ -98,12 +108,6 @@ public class ScreenshotHandler
                 .WithDescription("Could not reach the analysis service. Please try again.")
                 .WithColor(Color.Red);
 
-        if (result.IsDuplicate)
-            return new EmbedBuilder()
-                .WithTitle("Duplicate Screenshot")
-                .WithDescription("This screenshot has already been processed.")
-                .WithColor(Color.Orange);
-
         if (!result.Success || result.BattleData == null)
             return new EmbedBuilder()
                 .WithTitle("Upload Failed")
@@ -119,10 +123,13 @@ public class ScreenshotHandler
         var playerTag = player.GroupTag != null ? $" [{player.GroupTag}]" : "";
         var enemyTag = enemy.GroupTag != null ? $" [{enemy.GroupTag}]" : "";
 
-        var color = player.LossCount <= enemy.LossCount ? Color.Green : Color.Red;
+        var color = result.IsDuplicate ? Color.Orange : (player.LossCount <= enemy.LossCount ? Color.Green : Color.Red);
+        var title = result.IsDuplicate
+            ? $"Duplicate — {data.BattleType} | {data.BattleDate:yyyy-MM-dd}"
+            : $"Battle Report — {data.BattleType} | {data.BattleDate:yyyy-MM-dd}";
 
         return new EmbedBuilder()
-            .WithTitle($"Battle Report — {data.BattleType} | {data.BattleDate:yyyy-MM-dd}")
+            .WithTitle(title)
             .WithColor(color)
             .AddField("Player", $"{playerName}{playerTag} | Lv.{player.Level}", inline: true)
             .AddField("Enemy", $"{enemyName}{enemyTag} | Lv.{enemy.Level}", inline: true)
@@ -142,10 +149,10 @@ public class ScreenshotHandler
                 inline: true)
             .AddField("\u200b", "\u200b")
             .AddField("Player Skills",
-                $"Active: {player.ActiveSkill / 100}%\nBasic Attack: {player.BasicAttackBonus / 100}%\nSkill Bonus: {player.SkillBonus / 100}%\nSkill Reduction: {player.SkillReduction / 100}%",
+                $"Active: {player.ActiveSkill / 100}%\nBasic Attack: {player.BasicAttackBonus / 100}%\nSkill Bonus: {player.SkillBonus / 100}%\nSkill Reduction: {player.SkillReduction / 100}%\nExtra Damage: {player.ExtraDamage}",
                 inline: true)
             .AddField("Enemy Skills",
-                $"Active: {enemy.ActiveSkill / 100}%\nBasic Attack: {enemy.BasicAttackBonus / 100}%\nSkill Bonus: {enemy.SkillBonus / 100}%\nSkill Reduction: {enemy.SkillReduction / 100}%",
+                $"Active: {enemy.ActiveSkill / 100}%\nBasic Attack: {enemy.BasicAttackBonus / 100}%\nSkill Bonus: {enemy.SkillBonus / 100}%\nSkill Reduction: {enemy.SkillReduction / 100}%\nExtra Damage: {enemy.ExtraDamage}",
                 inline: true)
             .WithFooter(result.RemainingQuota != null
                 ? $"Quota remaining — Daily: {result.RemainingQuota.DailyRemaining} | Monthly: {result.RemainingQuota.MonthlyRemaining}"
