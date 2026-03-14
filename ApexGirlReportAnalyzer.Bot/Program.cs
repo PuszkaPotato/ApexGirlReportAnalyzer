@@ -2,11 +2,13 @@ using ApexGirlReportAnalyzer.Bot;
 using ApexGirlReportAnalyzer.Bot.Configuration;
 using ApexGirlReportAnalyzer.Bot.Http;
 using ApexGirlReportAnalyzer.Bot.Services;
+using Discord.Interactions;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.Configure<DiscordBotOptions>(builder.Configuration.GetSection("Bot"));
 builder.Services.AddSingleton<DiscordLogService>();
+builder.Services.AddSingleton<InteractionService>();
 builder.Services.AddHostedService<DiscordBotService>();
 builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("Api"));
 

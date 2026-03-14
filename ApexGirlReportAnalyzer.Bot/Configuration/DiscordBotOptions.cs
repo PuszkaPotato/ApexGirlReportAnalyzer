@@ -14,4 +14,9 @@ public class DiscordBotOptions
     /// Discord bot token. Set via user secrets.
     /// </summary>
     public string Token { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Test server discord guild ID for registering commands during development.
+    /// </summary>
+    public ulong TestGuildId { get; set; } = ulong.MaxValue;
 }
