@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** March 13, 2026
+**Last Updated:** March 14, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** Config classes + ApiClient complete — `DiscordBotService` is next on `feature/discord-bot` branch
+**Status:** Screenshot handler done, tier slash command done — tier modal is next on `feature/discord-bot` branch
 
 ---
 
@@ -185,11 +185,16 @@ See `.claude/docs/code-standards.md`:
 ### Phase 3: Bot Project (branch: `feature/discord-bot`)
 1. ~~**Config classes** — `DiscordBotOptions`, `ApiOptions`; wire up `appsettings.json` + user secrets~~ ✓ Done
 2. ~~**`ApiClient`** — Typed HttpClient for all API calls~~ ✓ Done
-3. **`DiscordBotService`** — BackgroundService managing Discord client lifecycle ← **START HERE**
-4. **`/setup` slash command** — `SetupModule.cs`
-5. **Screenshot listener** — `ScreenshotHandler.cs` (core feature)
-6. **`/reports` slash command** — `ReportsModule.cs`
-7. **Polish** — Graceful shutdown, logging
+3. ~~**`DiscordBotService`** — BackgroundService managing Discord client lifecycle~~ ✓ Done
+4. ~~**`/setup` slash commands** — `SetupModule.cs` (`init`, `view`, `update`)~~ ✓ Done
+5. ~~**`/reports` slash command** — `ReportsModule.cs`~~ ✓ Done
+6. ~~**Screenshot handler** — `ScreenshotHandler.cs` (core feature)~~ ✓ Done
+7. ~~**`/assign-tier` slash command** — `TierModule.cs`~~ ✓ Done
+8. **Tier assignment modal** — `TierModalModule.cs` ← **NEXT**
+9. **Polish** — Graceful shutdown, logging
+
+### Before Pre-Alpha Testing
+- **CSV Export** — export battle reports to CSV
 
 ### Future Phases
 - **Phase 4:** Analytics & Polish
