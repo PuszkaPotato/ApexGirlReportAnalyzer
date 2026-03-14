@@ -1,4 +1,3 @@
-using ApexGirlReportAnalyzer.Bot;
 using ApexGirlReportAnalyzer.Bot.Configuration;
 using ApexGirlReportAnalyzer.Bot.Http;
 using ApexGirlReportAnalyzer.Bot.Services;
@@ -7,12 +6,12 @@ using Discord.Interactions;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.Configure<DiscordBotOptions>(builder.Configuration.GetSection("Bot"));
-builder.Services.AddSingleton<DiscordLogService>();
-builder.Services.AddSingleton<InteractionService>();
-builder.Services.AddHostedService<DiscordBotService>();
 builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("Api"));
 
-builder.Services.AddScoped<SetupService>();
+builder.Services.AddSingleton<DiscordLogService>();
+builder.Services.AddSingleton<InteractionService>();
+builder.Services.AddSingleton<SetupService>();
+builder.Services.AddSingleton<ReportsService>();
 
 builder.Services.AddHttpClient<ApiClient>((serviceProvider, client) =>
 {
@@ -28,7 +27,7 @@ builder.Services.AddHttpClient<ApiClient>((serviceProvider, client) =>
     client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
 });
 
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<DiscordBotService>();
 
 var host = builder.Build();
 host.Run();
