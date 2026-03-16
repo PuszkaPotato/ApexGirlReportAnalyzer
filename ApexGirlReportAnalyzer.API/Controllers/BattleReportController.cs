@@ -2,6 +2,7 @@
 using ApexGirlReportAnalyzer.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace ApexGirlReportAnalyzer.API.Controllers;
 
@@ -15,12 +16,14 @@ public class BattleReportController : ControllerBase
 {
     private readonly ILogger<BattleReportController> _logger;
     private readonly IBattleReportService _battleReportService;
+    private readonly IConfiguration _configuration;
 
     /// <inheritdoc />
-    public BattleReportController(ILogger<BattleReportController> logger, IBattleReportService battleReportService)
+    public BattleReportController(ILogger<BattleReportController> logger, IBattleReportService battleReportService, IConfiguration configuration)
     {
         _logger = logger;
         _battleReportService = battleReportService;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -67,6 +70,29 @@ public class BattleReportController : ControllerBase
             BattleReports = reports
         };
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Export battle reports as a CSV file, filtered by privacy scope.
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportBattleReportsCsv(
+        [FromQuery] string? requestingDiscordUserId = null,
+        [FromQuery] string? participant = null,
+        [FromQuery] string? battleType = null,
+        [FromQuery] DateTime? battleDate = null,
+        [FromQuery] string? groupTag = null)
+    {
+        var developerDiscordId = _configuration["App:DeveloperDiscordId"];
+        var isDeveloper = !string.IsNullOrEmpty(developerDiscordId) &&
+                          requestingDiscordUserId == developerDiscordId;
+
+        var csv = await _battleReportService.ExportBattleReportsCsvAsync(
+            requestingDiscordUserId, isDeveloper, participant, battleType, battleDate, groupTag);
+
+        var fileName = $"battle-reports-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+        return File(bytes, "text/csv", fileName);
     }
 
     /// <summary>

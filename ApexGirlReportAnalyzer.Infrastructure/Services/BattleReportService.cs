@@ -80,6 +80,74 @@ public class BattleReportService : IBattleReportService
         return BattleReportMapper.ToDto(query, query.Upload);
     }
 
+    public async Task<string> ExportBattleReportsCsvAsync(
+        string? requestingDiscordUserId = null,
+        bool isDeveloper = false,
+        string? participant = null,
+        string? battleType = null,
+        DateTime? battleDate = null,
+        string? groupTag = null)
+    {
+        var query = _context.BattleReports
+            .Include(br => br.BattleSides)
+            .Include(br => br.Upload)
+                .ThenInclude(u => u.User)
+            .AsQueryable();
+
+        if (!isDeveloper)
+        {
+            query = query.Where(br =>
+                br.Upload.PrivacyScope == PrivacyScope.Public ||
+                (requestingDiscordUserId != null && br.Upload.User.DiscordId == requestingDiscordUserId));
+        }
+
+        if (!string.IsNullOrEmpty(participant))
+            query = query.Where(br => br.BattleSides.Any(bs => bs.Username == participant));
+        if (!string.IsNullOrEmpty(battleType))
+            query = query.Where(br => br.BattleType == battleType);
+        if (battleDate.HasValue)
+            query = query.Where(br => br.BattleDate.Date == battleDate.Value.Date);
+        if (!string.IsNullOrEmpty(groupTag))
+            query = query.Where(br => br.BattleSides.Any(bs => bs.GroupTag == groupTag));
+
+        var reports = await query.OrderByDescending(br => br.BattleDate).ToListAsync();
+
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine(
+            "ReportId,BattleDate,BattleType,UploadedAt," +
+            "Player_Username,Player_InGameId,Player_GroupTag,Player_Level,Player_Fans,Player_Losses,Player_Injured,Player_Remaining,Player_Sing,Player_Dance,Player_ActiveSkill,Player_BasicAttack,Player_SkillBonus,Player_SkillReduction,Player_ExtraDamage," +
+            "Enemy_Username,Enemy_InGameId,Enemy_GroupTag,Enemy_Level,Enemy_Fans,Enemy_Losses,Enemy_Injured,Enemy_Remaining,Enemy_Sing,Enemy_Dance,Enemy_ActiveSkill,Enemy_BasicAttack,Enemy_SkillBonus,Enemy_SkillReduction,Enemy_ExtraDamage");
+
+        foreach (var report in reports)
+        {
+            var mapped = BattleReportMapper.ToDto(report, report.Upload);
+            var p = mapped.Player;
+            var e = mapped.Enemy;
+
+            csv.AppendLine(string.Join(",",
+                report.Id,
+                report.BattleDate.ToString("yyyy-MM-dd"),
+                CsvEscape(report.BattleType),
+                report.Upload?.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss") ?? "",
+                CsvEscape(p.Username), CsvEscape(p.InGamePlayerId), CsvEscape(p.GroupTag),
+                p.Level, p.FanCount, p.LossCount, p.InjuredCount, p.RemainingCount ?? 0,
+                p.Sing, p.Dance, p.ActiveSkill, p.BasicAttackBonus, p.SkillBonus, p.SkillReduction, p.ExtraDamage,
+                CsvEscape(e.Username), CsvEscape(e.InGamePlayerId), CsvEscape(e.GroupTag),
+                e.Level, e.FanCount, e.LossCount, e.InjuredCount, e.RemainingCount ?? 0,
+                e.Sing, e.Dance, e.ActiveSkill, e.BasicAttackBonus, e.SkillBonus, e.SkillReduction, e.ExtraDamage));
+        }
+
+        return csv.ToString();
+    }
+
+    private static string CsvEscape(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        return value;
+    }
+
     public async Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId)
     {
 
