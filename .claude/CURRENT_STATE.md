@@ -158,6 +158,9 @@
 - No rate limiting beyond quota system
 - No caching
 
+### Deferred Tasks
+- **`/assign-tier` on unregistered user** — currently returns generic "tier not found" error; should return "User not registered" message. Do NOT auto-create the user — first upload will eventually trigger a privacy policy/ToS acceptance flow which is when the user record should be created.
+
 ---
 
 ## Code Quality Notes

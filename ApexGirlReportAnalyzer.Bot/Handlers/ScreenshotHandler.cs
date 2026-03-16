@@ -114,7 +114,17 @@ public class ScreenshotHandler
                 .WithDescription(result.ErrorMessage ?? "An unexpected error occurred.")
                 .WithColor(Color.Red);
 
-        var data = result.BattleData;
+        var color = result.IsDuplicate ? Color.Orange : Color.Default;
+        var titlePrefix = result.IsDuplicate ? "Duplicate — " : "Battle Report — ";
+
+        return BuildReportEmbed(result.BattleData, titlePrefix, color)
+            .WithFooter(result.RemainingQuota != null
+                ? $"Quota remaining — Daily: {result.RemainingQuota.DailyRemaining} | Monthly: {result.RemainingQuota.MonthlyRemaining}"
+                : string.Empty);
+    }
+
+    public static EmbedBuilder BuildReportEmbed(BattleReportResponse data, string titlePrefix = "Battle Report — ", Color color = default)
+    {
         var player = data.Player;
         var enemy = data.Enemy;
 
@@ -123,13 +133,11 @@ public class ScreenshotHandler
         var playerTag = player.GroupTag != null ? $" [{player.GroupTag}]" : "";
         var enemyTag = enemy.GroupTag != null ? $" [{enemy.GroupTag}]" : "";
 
-        var color = result.IsDuplicate ? Color.Orange : (player.LossCount <= enemy.LossCount ? Color.Green : Color.Red);
-        var title = result.IsDuplicate
-            ? $"Duplicate — {data.BattleType} | {data.BattleDate:yyyy-MM-dd}"
-            : $"Battle Report — {data.BattleType} | {data.BattleDate:yyyy-MM-dd}";
+        if (color == default)
+            color = player.LossCount <= enemy.LossCount ? Color.Green : Color.Red;
 
         return new EmbedBuilder()
-            .WithTitle(title)
+            .WithTitle($"{titlePrefix}{data.BattleType} | {data.BattleDate:yyyy-MM-dd}")
             .WithColor(color)
             .AddField("Player", $"{playerName}{playerTag} | Lv.{player.Level}", inline: true)
             .AddField("Enemy", $"{enemyName}{enemyTag} | Lv.{enemy.Level}", inline: true)
@@ -153,10 +161,7 @@ public class ScreenshotHandler
                 inline: true)
             .AddField("Enemy Skills",
                 $"Active: {enemy.ActiveSkill / 100}%\nBasic Attack: {enemy.BasicAttackBonus / 100}%\nSkill Bonus: {enemy.SkillBonus / 100}%\nSkill Reduction: {enemy.SkillReduction / 100}%\nExtra Damage: {enemy.ExtraDamage}",
-                inline: true)
-            .WithFooter(result.RemainingQuota != null
-                ? $"Quota remaining — Daily: {result.RemainingQuota.DailyRemaining} | Monthly: {result.RemainingQuota.MonthlyRemaining}"
-                : string.Empty);
+                inline: true);
     }
 
     #endregion

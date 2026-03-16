@@ -119,16 +119,62 @@ public class ApiClient
     public async Task<BattleReportListResponse?> GetBattleReportsAsync(
         Guid? userId = null,
         string? participant = null,
+        string? battleType = null,
+        string? groupTag = null,
+        string? inGameId = null,
+        DateTime? battleDate = null,
         int limit = 10,
         int offset = 0,
         CancellationToken cancellationToken = default)
     {
-        var query = BuildReportsQueryString(userId, participant, limit, offset);
+        var query = BuildReportsQueryString(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset);
         _logger.LogDebug("Querying battle reports: {Query}", query);
 
         var response = await _httpClient.GetAsync($"api/battlereport?{query}", cancellationToken);
 
         return await DeserializeResponseAsync<BattleReportListResponse>(response, nameof(GetBattleReportsAsync));
+    }
+
+    /// <summary>
+    /// Exports battle reports as a CSV stream.
+    /// </summary>
+    public async Task<Stream?> ExportBattleReportsCsvAsync(
+        string? requestingDiscordUserId = null,
+        string? participant = null,
+        string? battleType = null,
+        DateTime? battleDate = null,
+        string? groupTag = null,
+        CancellationToken cancellationToken = default)
+    {
+        var parts = new List<string>();
+        if (requestingDiscordUserId != null) parts.Add($"requestingDiscordUserId={Uri.EscapeDataString(requestingDiscordUserId)}");
+        if (participant != null) parts.Add($"participant={Uri.EscapeDataString(participant)}");
+        if (battleType != null) parts.Add($"battleType={Uri.EscapeDataString(battleType)}");
+        if (battleDate.HasValue) parts.Add($"battleDate={battleDate.Value:yyyy-MM-dd}");
+        if (groupTag != null) parts.Add($"groupTag={Uri.EscapeDataString(groupTag)}");
+
+        var query = string.Join("&", parts);
+        var response = await _httpClient.GetAsync($"api/battlereport/export?{query}", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("{Operation} failed with status {StatusCode}", nameof(ExportBattleReportsCsvAsync), response.StatusCode);
+            return null;
+        }
+
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets a single battle report by its ID.
+    /// </summary>
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Getting battle report {ReportId}", reportId);
+
+        var response = await _httpClient.GetAsync($"api/battlereport/reportId?reportId={reportId}", cancellationToken);
+
+        return await DeserializeResponseAsync<BattleReportResponse>(response, nameof(GetBattleReportByIdAsync));
     }
 
     /// <summary>
@@ -187,15 +233,22 @@ public class ApiClient
         return JsonSerializer.Deserialize<T>(json, JsonOptions);
     }
 
-    private static string BuildReportsQueryString(Guid? userId, string? participant, int limit, int offset)
+    private static string BuildReportsQueryString(Guid? userId, string? participant, string? battleType, string? groupTag, string? inGameId, DateTime? battleDate, int limit, int offset)
     {
         var parts = new List<string>();
 
         if (userId.HasValue)
             parts.Add($"userId={userId.Value}");
-
         if (participant != null)
             parts.Add($"participant={Uri.EscapeDataString(participant)}");
+        if (battleType != null)
+            parts.Add($"battleType={Uri.EscapeDataString(battleType)}");
+        if (groupTag != null)
+            parts.Add($"groupTag={Uri.EscapeDataString(groupTag)}");
+        if (inGameId != null)
+            parts.Add($"inGameId={Uri.EscapeDataString(inGameId)}");
+        if (battleDate.HasValue)
+            parts.Add($"battleDate={battleDate.Value:yyyy-MM-dd}");
 
         parts.Add($"limit={limit}");
         parts.Add($"offset={offset}");
