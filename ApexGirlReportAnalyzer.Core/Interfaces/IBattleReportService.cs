@@ -31,4 +31,15 @@ public interface IBattleReportService
     Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId);
 
     Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId);
+
+    /// <summary>
+    /// Exports battle reports as a CSV string, filtered by privacy scope.
+    /// </summary>
+    Task<string> ExportBattleReportsCsvAsync(
+        string? requestingDiscordUserId = null,
+        bool isDeveloper = false,
+        string? participant = null,
+        string? battleType = null,
+        DateTime? battleDate = null,
+        string? groupTag = null);
 }
