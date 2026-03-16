@@ -59,6 +59,12 @@ public class ApiClient
         string discordServerId,
         string? discordChannelId = null,
         string? discordMessageId = null,
+        string? playerInGameId = null,
+        string? enemyInGameId = null,
+        int? playerTeamRank = null,
+        int? enemyTeamRank = null,
+        int? playerServer = null,
+        int? enemyServer = null,
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Uploading screenshot for user {UserId} in server {ServerId}", userId, discordServerId);
@@ -75,9 +81,20 @@ public class ApiClient
 
         if (discordChannelId != null)
             content.Add(new StringContent(discordChannelId), "discordChannelId");
-
         if (discordMessageId != null)
             content.Add(new StringContent(discordMessageId), "discordMessageId");
+        if (playerInGameId != null)
+            content.Add(new StringContent(playerInGameId), "playerInGameId");
+        if (enemyInGameId != null)
+            content.Add(new StringContent(enemyInGameId), "enemyInGameId");
+        if (playerTeamRank.HasValue)
+            content.Add(new StringContent(playerTeamRank.Value.ToString()), "playerTeamRank");
+        if (enemyTeamRank.HasValue)
+            content.Add(new StringContent(enemyTeamRank.Value.ToString()), "enemyTeamRank");
+        if (playerServer.HasValue)
+            content.Add(new StringContent(playerServer.Value.ToString()), "playerServer");
+        if (enemyServer.HasValue)
+            content.Add(new StringContent(enemyServer.Value.ToString()), "enemyServer");
 
         var response = await _httpClient.PostAsync("api/upload", content, cancellationToken);
 

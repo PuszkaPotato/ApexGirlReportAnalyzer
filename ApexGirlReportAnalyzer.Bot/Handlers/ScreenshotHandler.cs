@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ApexGirlReportAnalyzer.Bot.Http;
 using ApexGirlReportAnalyzer.Bot.Services;
 using ApexGirlReportAnalyzer.Models.DTOs;
@@ -6,19 +7,38 @@ using Discord.WebSocket;
 
 namespace ApexGirlReportAnalyzer.Bot.Handlers;
 
+public record ParsedUploadMetadata(
+    string PlayerInGameId,
+    int PlayerTeamRank,
+    int PlayerServer,
+    string EnemyInGameId,
+    int EnemyTeamRank,
+    int EnemyServer);
+
 public class ScreenshotHandler
 {
     private readonly ApiClient _apiClient;
     private readonly ILogger<ScreenshotHandler> _logger;
     private readonly HttpClient _httpClient;
     private readonly SetupService _setupService;
+    private readonly PendingUploadService _pendingUploadService;
 
-    public ScreenshotHandler(ApiClient apiClient, ILogger<ScreenshotHandler> logger, HttpClient httpClient, SetupService setupService)
+    private static readonly Regex MetadataRegex = new(
+        @"(\d{5,6})\s+(team[1-6]|b[1-6]|[1-6])\s+(\d{3,4})\s+(\d{5,6})\s+(team[1-6]|b[1-6]|[1-6])\s+(\d{3,4})",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public ScreenshotHandler(
+        ApiClient apiClient,
+        ILogger<ScreenshotHandler> logger,
+        HttpClient httpClient,
+        SetupService setupService,
+        PendingUploadService pendingUploadService)
     {
         _apiClient = apiClient;
         _logger = logger;
         _httpClient = httpClient;
         _setupService = setupService;
+        _pendingUploadService = pendingUploadService;
     }
 
     public async Task MessageReceived(SocketMessage message)
@@ -26,11 +46,12 @@ public class ScreenshotHandler
         if (message.Attachments.Count == 0) return;
         if (message.Author.IsBot) return;
 
-        var server = await _setupService.GetServerConfigAsync(((SocketGuildChannel)message.Channel).Guild.Id.ToString());
+        var guild = ((SocketGuildChannel)message.Channel).Guild;
+        var server = await _setupService.GetServerConfigAsync(guild.Id.ToString());
 
         if (server == null)
         {
-            _logger.LogWarning("Received message in channel {ChannelId} but no server config found for guild {GuildId}", message.Channel.Id, ((SocketGuildChannel)message.Channel).Guild.Id);
+            _logger.LogWarning("Received message in channel {ChannelId} but no server config found for guild {GuildId}", message.Channel.Id, guild.Id);
             return;
         }
 
@@ -45,13 +66,40 @@ public class ScreenshotHandler
         if (userMessage == null)
             return;
 
+        var metadata = ParseMetadata(message.Content);
+        if (metadata != null)
+        {
+            var userId = await GetUserId(message.Author.Id.ToString());
+            var correlationId = _pendingUploadService.Add(new PendingUploadData(
+                UserId: userId,
+                DiscordServerId: guild.Id.ToString(),
+                DiscordChannelId: message.Channel.Id.ToString(),
+                DiscordMessageId: message.Id.ToString(),
+                ImageUrl: attachment.Url,
+                FileName: attachment.Filename,
+                PlayerInGameId: metadata.PlayerInGameId,
+                PlayerTeamRank: metadata.PlayerTeamRank,
+                PlayerServer: metadata.PlayerServer,
+                EnemyInGameId: metadata.EnemyInGameId,
+                EnemyTeamRank: metadata.EnemyTeamRank,
+                EnemyServer: metadata.EnemyServer));
+
+            var components = new ComponentBuilder()
+                .WithButton("Confirm", $"confirm_upload:{correlationId}", ButtonStyle.Success)
+                .WithButton("Cancel", $"cancel_upload:{correlationId}", ButtonStyle.Danger)
+                .Build();
+
+            await userMessage.ReplyAsync(embed: BuildConfirmEmbed(metadata).Build(), components: components);
+            return;
+        }
+
         var processingMessage = await userMessage.ReplyAsync("Your report is being processed...");
 
         try
         {
             var uploadResult = await _apiClient.UploadScreenshotAsync(
                 userId: await GetUserId(message.Author.Id.ToString()),
-                discordServerId: ((SocketGuildChannel)message.Channel).Guild.Id.ToString(),
+                discordServerId: guild.Id.ToString(),
                 discordChannelId: message.Channel.Id.ToString(),
                 discordMessageId: message.Id.ToString(),
                 imageStream: await DownloadImageAsync(attachment.Url),
@@ -74,33 +122,9 @@ public class ScreenshotHandler
         }
     }
 
-    #region Private Helper Methods
+    #region Embed Builders
 
-    private async Task<Guid> GetUserId(string discordUserId)
-    {
-        var user = await _apiClient.GetOrCreateUserAsync(discordUserId);
-        if (user == null)
-            throw new Exception($"Failed to get or create user for Discord ID {discordUserId}");
-
-        return user.Id;
-    }
-
-    private async Task<Stream> DownloadImageAsync(string imageUrl)
-    {
-        try
-        {
-            var response = await _httpClient.GetAsync(imageUrl);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStreamAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to download image from URL {ImageUrl}", imageUrl);
-            throw;
-        }
-    }
-
-    private static EmbedBuilder BuildReportEmbed(UploadResponse? result)
+    public static EmbedBuilder BuildReportEmbed(UploadResponse? result)
     {
         if (result == null)
             return new EmbedBuilder()
@@ -162,6 +186,60 @@ public class ScreenshotHandler
             .AddField("Enemy Skills",
                 $"Active: {enemy.ActiveSkill / 100}%\nBasic Attack: {enemy.BasicAttackBonus / 100}%\nSkill Bonus: {enemy.SkillBonus / 100}%\nSkill Reduction: {enemy.SkillReduction / 100}%\nExtra Damage: {enemy.ExtraDamage}",
                 inline: true);
+    }
+
+    private static EmbedBuilder BuildConfirmEmbed(ParsedUploadMetadata metadata)
+    {
+        return new EmbedBuilder()
+            .WithTitle("Is this extra information correct?")
+            .WithColor(Color.Blue)
+            .AddField("Player", $"In-Game ID: {metadata.PlayerInGameId}\nTeam Rank: {metadata.PlayerTeamRank}\nServer: {metadata.PlayerServer}", inline: true)
+            .AddField("Enemy", $"In-Game ID: {metadata.EnemyInGameId}\nTeam Rank: {metadata.EnemyTeamRank}\nServer: {metadata.EnemyServer}", inline: true)
+            .WithFooter("Confirm to process your report, or cancel to upload without this data.");
+    }
+
+    #endregion
+
+    #region Private Helper Methods
+
+    private async Task<Guid> GetUserId(string discordUserId)
+    {
+        var user = await _apiClient.GetOrCreateUserAsync(discordUserId);
+        if (user == null)
+            throw new Exception($"Failed to get or create user for Discord ID {discordUserId}");
+
+        return user.Id;
+    }
+
+    private async Task<Stream> DownloadImageAsync(string imageUrl)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(imageUrl);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStreamAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download image from URL {ImageUrl}", imageUrl);
+            throw;
+        }
+    }
+
+    private static ParsedUploadMetadata? ParseMetadata(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+
+        var match = MetadataRegex.Match(content);
+        if (!match.Success) return null;
+
+        return new ParsedUploadMetadata(
+            PlayerInGameId: match.Groups[1].Value,
+            PlayerTeamRank: int.Parse(Regex.Replace(match.Groups[2].Value, @"[^\d]", "")),
+            PlayerServer: int.Parse(match.Groups[3].Value),
+            EnemyInGameId: match.Groups[4].Value,
+            EnemyTeamRank: int.Parse(Regex.Replace(match.Groups[5].Value, @"[^\d]", "")),
+            EnemyServer: int.Parse(match.Groups[6].Value));
     }
 
     #endregion

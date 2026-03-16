@@ -23,6 +23,7 @@ builder.Services.AddSingleton<DiscordLogService>();
 builder.Services.AddSingleton<SetupService>();
 builder.Services.AddSingleton<ReportsService>();
 builder.Services.AddSingleton<TierService>();
+builder.Services.AddSingleton<PendingUploadService>();
 
 builder.Services.AddHttpClient<ScreenshotHandler>();
 
