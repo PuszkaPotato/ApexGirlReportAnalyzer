@@ -144,6 +144,21 @@ public class ApiClient
     }
 
     /// <summary>
+    /// Assigns a tier to a Discord server.
+    /// </summary>
+    public async Task<bool> AssignTierToServerAsync(string discordServerId, Guid tierId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Assigning tier {TierId} to server {DiscordServerId}", tierId, discordServerId);
+
+        var response = await _httpClient.PutAsync(
+            $"api/tiers/{tierId}/assign-server/{Uri.EscapeDataString(discordServerId)}",
+            null,
+            cancellationToken);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>
     /// Assigns a tier to a user by their Discord ID.
     /// </summary>
     public async Task<bool> AssignTierToUserAsync(string discordUserId, Guid tierId, CancellationToken cancellationToken = default)

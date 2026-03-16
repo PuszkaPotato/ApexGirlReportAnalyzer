@@ -19,4 +19,9 @@ public class DiscordBotOptions
     /// Test server discord guild ID for registering commands during development.
     /// </summary>
     public ulong TestGuildId { get; set; } = ulong.MaxValue;
+
+    /// <summary>
+    /// Discord user ID of the developer. Used to restrict access to developer-only commands.
+    /// </summary>
+    public ulong DeveloperId { get; set; }
 }
