@@ -115,8 +115,8 @@ public class BattleReportService : IBattleReportService
         var csv = new System.Text.StringBuilder();
         csv.AppendLine(
             "ReportId,BattleDate,BattleType,UploadedAt," +
-            "Player_Username,Player_InGameId,Player_GroupTag,Player_Level,Player_Fans,Player_Losses,Player_Injured,Player_Remaining,Player_Sing,Player_Dance,Player_ActiveSkill,Player_BasicAttack,Player_SkillBonus,Player_SkillReduction,Player_ExtraDamage," +
-            "Enemy_Username,Enemy_InGameId,Enemy_GroupTag,Enemy_Level,Enemy_Fans,Enemy_Losses,Enemy_Injured,Enemy_Remaining,Enemy_Sing,Enemy_Dance,Enemy_ActiveSkill,Enemy_BasicAttack,Enemy_SkillBonus,Enemy_SkillReduction,Enemy_ExtraDamage");
+            "Player_Username,Player_InGameId,Player_GroupTag,Player_Level,Player_TeamRank,Player_Server,Player_Fans,Player_Losses,Player_Injured,Player_Remaining,Player_Sing,Player_Dance,Player_ActiveSkill,Player_BasicAttack,Player_SkillBonus,Player_SkillReduction,Player_ExtraDamage," +
+            "Enemy_Username,Enemy_InGameId,Enemy_GroupTag,Enemy_Level,Enemy_TeamRank,Enemy_Server,Enemy_Fans,Enemy_Losses,Enemy_Injured,Enemy_Remaining,Enemy_Sing,Enemy_Dance,Enemy_ActiveSkill,Enemy_BasicAttack,Enemy_SkillBonus,Enemy_SkillReduction,Enemy_ExtraDamage");
 
         foreach (var report in reports)
         {
@@ -130,10 +130,10 @@ public class BattleReportService : IBattleReportService
                 CsvEscape(report.BattleType),
                 report.Upload?.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss") ?? "",
                 CsvEscape(p.Username), CsvEscape(p.InGamePlayerId), CsvEscape(p.GroupTag),
-                p.Level, p.FanCount, p.LossCount, p.InjuredCount, p.RemainingCount ?? 0,
+                p.Level, p.TeamRank, p.Server, p.FanCount, p.LossCount, p.InjuredCount, p.RemainingCount ?? 0,
                 p.Sing, p.Dance, p.ActiveSkill, p.BasicAttackBonus, p.SkillBonus, p.SkillReduction, p.ExtraDamage,
                 CsvEscape(e.Username), CsvEscape(e.InGamePlayerId), CsvEscape(e.GroupTag),
-                e.Level, e.FanCount, e.LossCount, e.InjuredCount, e.RemainingCount ?? 0,
+                e.Level, e.TeamRank, e.Server, e.FanCount, e.LossCount, e.InjuredCount, e.RemainingCount ?? 0,
                 e.Sing, e.Dance, e.ActiveSkill, e.BasicAttackBonus, e.SkillBonus, e.SkillReduction, e.ExtraDamage));
         }
 
@@ -148,7 +148,7 @@ public class BattleReportService : IBattleReportService
         return value;
     }
 
-    public async Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId)
+    public async Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId, int? playerTeamRank = null, int? enemyTeamRank = null, int? playerServer = null, int? enemyServer = null)
     {
 
         var battleReport = new BattleReport
@@ -162,8 +162,8 @@ public class BattleReportService : IBattleReportService
 
         _context.BattleReports.Add(battleReport);
 
-        var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId);
-        var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId);
+        var playerSide = BattleReportMapper.ToEntity(battleData.Player, battleReport.Id, BattleSideType.Player, playerInGameId, playerTeamRank, playerServer);
+        var enemySide = BattleReportMapper.ToEntity(battleData.Enemy, battleReport.Id, BattleSideType.Enemy, enemyInGameId, enemyTeamRank, enemyServer);
 
         _context.BattleSides.Add(playerSide);
         _context.BattleSides.Add(enemySide);
