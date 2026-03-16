@@ -9,6 +9,8 @@ public class BattleSide : BaseEntity
     public string? InGamePlayerId { get; set; }
     public string? GroupTag { get; set; }
     public int? Level { get; set; }
+    public int? TeamRank { get; set; }
+    public int? Server { get; set; }
     // Troop Statistics
     public int FanCount { get; set; }
     public int LossCount { get; set; }

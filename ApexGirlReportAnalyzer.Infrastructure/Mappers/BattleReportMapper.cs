@@ -26,6 +26,8 @@ public static class BattleReportMapper
             InGamePlayerId = side.InGamePlayerId,
             GroupTag = side.GroupTag,
             Level = side.Level,
+            TeamRank = side.TeamRank,
+            Server = side.Server,
             FanCount = side.FanCount,
             LossCount = side.LossCount,
             InjuredCount = side.InjuredCount,
@@ -71,7 +73,9 @@ public static class BattleReportMapper
         BattleSideDto dto,
         Guid battleReportId,
         BattleSideType sideType,
-        string? manualInGameId = null)
+        string? manualInGameId = null,
+        int? manualTeamRank = null,
+        int? manualServer = null)
     {
         return new BattleSide
         {
@@ -82,6 +86,8 @@ public static class BattleReportMapper
             InGamePlayerId = manualInGameId ?? dto.InGamePlayerId,
             GroupTag = dto.GroupTag,
             Level = dto.Level,
+            TeamRank = manualTeamRank ?? dto.TeamRank,
+            Server = manualServer ?? dto.Server,
             FanCount = dto.FanCount,
             LossCount = dto.LossCount,
             InjuredCount = dto.InjuredCount,

@@ -23,5 +23,9 @@ public interface IUploadService
         string? playerInGameId = null,
         string? enemyInGameId = null,
         string? discordChannelId = null,
-        string? discordMessageId = null);
+        string? discordMessageId = null,
+        int? playerTeamRank = null,
+        int? enemyTeamRank = null,
+        int? playerServer = null,
+        int? enemyServer = null);
 }

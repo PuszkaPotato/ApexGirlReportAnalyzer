@@ -34,6 +34,10 @@ public class UploadController : ControllerBase
     /// <param name="enemyInGameId">Optional: Enemy's in-game ID</param>
     /// <param name="discordChannelId">Optional: Discord channel ID where screenshot was posted</param>
     /// <param name="discordMessageId">Optional: Discord message ID of the screenshot</param>
+    /// <param name="playerTeamRank">Optional: Player's team rank (1-6)</param>
+    /// <param name="enemyTeamRank">Optional: Enemy's team rank (1-6)</param>
+    /// <param name="playerServer">Optional: Player's server number</param>
+    /// <param name="enemyServer">Optional: Enemy's server number</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Analysis results or error</returns>
     [HttpPost]
@@ -48,6 +52,10 @@ public class UploadController : ControllerBase
         [FromForm] string? enemyInGameId = null,
         [FromForm] string? discordChannelId = null,
         [FromForm] string? discordMessageId = null,
+        [FromForm] int? playerTeamRank = null,
+        [FromForm] int? enemyTeamRank = null,
+        [FromForm] int? playerServer = null,
+        [FromForm] int? enemyServer = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -78,7 +86,11 @@ public class UploadController : ControllerBase
                 playerInGameId,
                 enemyInGameId,
                 discordChannelId,
-                discordMessageId);
+                discordMessageId,
+                playerTeamRank,
+                enemyTeamRank,
+                playerServer,
+                enemyServer);
 
             // Return appropriate status code
             if (result.Success)

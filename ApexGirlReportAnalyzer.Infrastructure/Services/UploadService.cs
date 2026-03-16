@@ -43,7 +43,11 @@ public class UploadService : IUploadService
         string? playerInGameId = null,
         string? enemyInGameId = null,
         string? discordChannelId = null,
-        string? discordMessageId = null)
+        string? discordMessageId = null,
+        int? playerTeamRank = null,
+        int? enemyTeamRank = null,
+        int? playerServer = null,
+        int? enemyServer = null)
     {
         Upload? upload = null;
 
@@ -90,7 +94,7 @@ public class UploadService : IUploadService
                     UploadStatus.Failed);
             }
 
-            var reportId = await _battleReportService.CreateBattleReportAsync(battleData, upload.Id, playerInGameId, enemyInGameId);
+            var reportId = await _battleReportService.CreateBattleReportAsync(battleData, upload.Id, playerInGameId, enemyInGameId, playerTeamRank, enemyTeamRank, playerServer, enemyServer);
 
             await SaveUploadAsync(upload, battleData);
 

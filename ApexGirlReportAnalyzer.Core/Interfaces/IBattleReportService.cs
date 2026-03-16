@@ -30,7 +30,7 @@ public interface IBattleReportService
 
     Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId);
 
-    Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId);
+    Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId, int? playerTeamRank = null, int? enemyTeamRank = null, int? playerServer = null, int? enemyServer = null);
 
     /// <summary>
     /// Exports battle reports as a CSV string, filtered by privacy scope.
