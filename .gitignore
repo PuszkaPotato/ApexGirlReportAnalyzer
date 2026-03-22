@@ -368,7 +368,7 @@ FodyWeavers.xsd
 
 ## User Secrets & Configuration
 appsettings.Development.json
-appsettings.Production.json
+# appsettings.Production.json is intentionally committed — no secrets, only log levels/AllowedHosts
 appsettings.Local.json
 secrets.json
 
@@ -382,3 +382,5 @@ secrets.json
 
 ## Claude local settings
 .claude/settings.local.json
+# Docker secrets
+.env
