@@ -256,7 +256,8 @@ public class ScreenshotHandler
             return;
         }
 
-        var results = new List<UploadResponse?>();
+        // Track results in order so we can show per-item failure reasons
+        var results = new List<(UploadResponse? Response, string? Error)>();
 
         foreach (var attachment in attachments)
         {
@@ -270,60 +271,55 @@ public class ScreenshotHandler
                     imageStream: await DownloadImageAsync(attachment.Url),
                     fileName: attachment.Filename);
 
-                results.Add(result);
+                results.Add((result, null));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing image {FileName} in batch", attachment.Filename);
-                results.Add(null);
+                results.Add((null, "Could not reach the analysis service"));
             }
         }
 
-        var successes = results.Where(r => r?.Success == true && r.BattleData != null).ToList();
-        var failCount = results.Count - successes.Count;
+        var successCount = results.Count(r => r.Response?.Success == true && r.Response.BattleData != null);
+        var failCount = results.Count - successCount;
 
-        if (successes.Count == 0)
-        {
-            await processingMessage.ModifyAsync(m =>
-            {
-                m.Content = string.Empty;
-                m.Embed = new EmbedBuilder()
-                    .WithTitle("Batch Upload Failed")
-                    .WithDescription("All uploads failed to process. Please try again.")
-                    .WithColor(Color.Red)
-                    .Build();
-            });
-            return;
-        }
+        var color = successCount == 0 ? Color.Red : failCount == 0 ? Color.Green : Color.Orange;
+        var title = successCount == 0
+            ? "Batch Upload Failed"
+            : $"Batch Upload — {successCount}/{results.Count} processed";
 
-        var footer = failCount > 0
-            ? $"{failCount} upload(s) failed | Click a button to view full details"
-            : "Click a button to view full details";
-
-        var embed = new EmbedBuilder()
-            .WithTitle($"Batch Upload — {successes.Count} report(s) processed")
-            .WithColor(Color.Green)
-            .WithFooter(footer);
-
-        for (int i = 0; i < successes.Count; i++)
-        {
-            var report = successes[i]!.BattleData!;
-            var playerName = report.Player.Username ?? report.Player.InGamePlayerId ?? "Unknown";
-            var enemyName = report.Enemy.Username ?? report.Enemy.InGamePlayerId ?? "Unknown";
-            embed.AddField(
-                $"{i + 1}. {playerName} vs {enemyName}",
-                $"**Type:** {report.BattleType} | **Date:** {report.BattleDate:yyyy-MM-dd}",
-                inline: false);
-        }
+        var embed = new EmbedBuilder().WithTitle(title).WithColor(color);
+        if (successCount > 0)
+            embed.WithFooter("Click a button to view full details");
 
         var components = new ComponentBuilder();
-        for (int i = 0; i < successes.Count; i++)
+        var buttonCount = 0;
+
+        for (int i = 0; i < results.Count; i++)
         {
-            components.WithButton(
-                label: $"{i + 1}",
-                customId: $"report_details:{successes[i]!.BattleData!.ReportId}",
-                style: ButtonStyle.Secondary,
-                row: i / 5);
+            var (response, error) = results[i];
+            var num = i + 1;
+
+            if (response?.Success == true && response.BattleData != null)
+            {
+                var playerName = response.BattleData.Player.Username ?? response.BattleData.Player.InGamePlayerId ?? "Unknown";
+                var enemyName = response.BattleData.Enemy.Username ?? response.BattleData.Enemy.InGamePlayerId ?? "Unknown";
+                embed.AddField(
+                    $"{num}. {playerName} vs {enemyName}",
+                    $"**Type:** {response.BattleData.BattleType} | **Date:** {response.BattleData.BattleDate:yyyy-MM-dd}",
+                    inline: false);
+                components.WithButton(
+                    label: $"{num}",
+                    customId: $"report_details:{response.BattleData.ReportId}",
+                    style: ButtonStyle.Secondary,
+                    row: buttonCount / 5);
+                buttonCount++;
+            }
+            else
+            {
+                var reason = response?.ErrorMessage ?? error ?? "Unknown error";
+                embed.AddField($"{num}. ❌ Failed", reason, inline: false);
+            }
         }
 
         await processingMessage.ModifyAsync(m =>

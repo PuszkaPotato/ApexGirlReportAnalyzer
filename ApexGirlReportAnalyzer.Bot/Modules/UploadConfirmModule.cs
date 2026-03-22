@@ -43,6 +43,13 @@ public class UploadConfirmModule : InteractionModuleBase<SocketInteractionContex
             return;
         }
 
+        await ModifyOriginalResponseAsync(m =>
+        {
+            m.Content = "Processing your report...";
+            m.Embed = null;
+            m.Components = new ComponentBuilder().Build();
+        });
+
         try
         {
             var httpClient = _httpClientFactory.CreateClient();
