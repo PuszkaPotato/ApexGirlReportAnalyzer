@@ -46,11 +46,14 @@ public class TierModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync(ephemeral: true);
 
-        var success = await _tierService.AssignTierToUserAsync(user.Id.ToString(), tierName);
+        var (success, userNotRegistered) = await _tierService.AssignTierToUserAsync(user.Id.ToString(), tierName);
 
         if (!success)
         {
-            await FollowupAsync($"Failed to assign tier **{tierName}** — tier not found or an error occurred.", ephemeral: true);
+            var errorMessage = userNotRegistered
+                ? $"{user.Mention} has not registered yet — they need to upload their first report before a tier can be assigned."
+                : $"Failed to assign tier **{tierName}** — tier not found or an error occurred.";
+            await FollowupAsync(errorMessage, ephemeral: true);
             return;
         }
 

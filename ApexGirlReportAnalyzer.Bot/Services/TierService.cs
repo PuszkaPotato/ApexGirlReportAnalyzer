@@ -19,10 +19,10 @@ public class TierService
         return await _apiClient.GetTiersAsync();
     }
 
-    public async Task<bool> AssignTierToUserAsync(string discordUserId, string tierName)
+    public async Task<(bool success, bool userNotRegistered)> AssignTierToUserAsync(string discordUserId, string tierName)
     {
         var tier = await ResolveTierByNameAsync(tierName);
-        if (tier == null) return false;
+        if (tier == null) return (false, false);
 
         return await _apiClient.AssignTierToUserAsync(discordUserId, tier.Id);
     }

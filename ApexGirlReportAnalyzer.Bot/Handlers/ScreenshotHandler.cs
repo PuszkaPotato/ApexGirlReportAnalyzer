@@ -57,16 +57,35 @@ public class ScreenshotHandler
 
         if (message.Channel.Id.ToString() != server.UploadChannelId) return;
 
-        var attachment = message.Attachments.FirstOrDefault(a => a.ContentType != null && a.ContentType.StartsWith("image/"));
-        if (attachment == null) return;
+        var imageAttachments = message.Attachments
+            .Where(a => a.ContentType != null && a.ContentType.StartsWith("image/"))
+            .ToList();
 
-        _logger.LogInformation("Received image attachment in channel {ChannelId} from user {UserId}", message.Channel.Id, message.Author.Id);
+        if (imageAttachments.Count == 0) return;
 
         var userMessage = message as IUserMessage;
-        if (userMessage == null)
-            return;
+        if (userMessage == null) return;
 
+        _logger.LogInformation("Received {Count} image attachment(s) in channel {ChannelId} from user {UserId}",
+            imageAttachments.Count, message.Channel.Id, message.Author.Id);
+
+        // Multi-image batch path
+        if (imageAttachments.Count > 1)
+        {
+            var hasMetadata = ParseMetadata(message.Content) != null;
+            string? processingText = hasMetadata
+                ? $"Processing {imageAttachments.Count} reports... (note: extra info in the message is not supported for batch uploads and was ignored)"
+                : $"Processing {imageAttachments.Count} reports...";
+
+            var processingMessage = await userMessage.ReplyAsync(processingText);
+            await ProcessBatchAsync(processingMessage, userMessage, imageAttachments, guild.Id.ToString());
+            return;
+        }
+
+        // Single image path
+        var attachment = imageAttachments[0];
         var metadata = ParseMetadata(message.Content);
+
         if (metadata != null)
         {
             var userId = await GetUserId(message.Author.Id.ToString());
@@ -93,7 +112,7 @@ public class ScreenshotHandler
             return;
         }
 
-        var processingMessage = await userMessage.ReplyAsync("Your report is being processed...");
+        var processingMsg = await userMessage.ReplyAsync("Your report is being processed...");
 
         try
         {
@@ -105,7 +124,7 @@ public class ScreenshotHandler
                 imageStream: await DownloadImageAsync(attachment.Url),
                 fileName: attachment.Filename);
 
-            await processingMessage.ModifyAsync(m =>
+            await processingMsg.ModifyAsync(m =>
             {
                 m.Content = string.Empty;
                 m.Embed = BuildReportEmbed(uploadResult).Build();
@@ -114,7 +133,7 @@ public class ScreenshotHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error has occured while processing the upload");
-            await processingMessage.ModifyAsync(m =>
+            await processingMsg.ModifyAsync(m =>
             {
                 m.Content = string.Empty;
                 m.Embed = BuildReportEmbed(null).Build();
@@ -201,6 +220,110 @@ public class ScreenshotHandler
     #endregion
 
     #region Private Helper Methods
+
+    private async Task ProcessBatchAsync(
+        IUserMessage processingMessage,
+        IUserMessage originalMessage,
+        List<Discord.Attachment> attachments,
+        string guildId)
+    {
+        Guid userId;
+        try
+        {
+            userId = await GetUserId(originalMessage.Author.Id.ToString());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve user for batch upload");
+            await processingMessage.ModifyAsync(m =>
+            {
+                m.Content = string.Empty;
+                m.Embed = new EmbedBuilder()
+                    .WithTitle("Batch Upload Failed")
+                    .WithDescription("Could not resolve your user account. Please try again.")
+                    .WithColor(Color.Red)
+                    .Build();
+            });
+            return;
+        }
+
+        var results = new List<UploadResponse?>();
+
+        foreach (var attachment in attachments)
+        {
+            try
+            {
+                var result = await _apiClient.UploadScreenshotAsync(
+                    userId: userId,
+                    discordServerId: guildId,
+                    discordChannelId: originalMessage.Channel.Id.ToString(),
+                    discordMessageId: originalMessage.Id.ToString(),
+                    imageStream: await DownloadImageAsync(attachment.Url),
+                    fileName: attachment.Filename);
+
+                results.Add(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing image {FileName} in batch", attachment.Filename);
+                results.Add(null);
+            }
+        }
+
+        var successes = results.Where(r => r?.Success == true && r.BattleData != null).ToList();
+        var failCount = results.Count - successes.Count;
+
+        if (successes.Count == 0)
+        {
+            await processingMessage.ModifyAsync(m =>
+            {
+                m.Content = string.Empty;
+                m.Embed = new EmbedBuilder()
+                    .WithTitle("Batch Upload Failed")
+                    .WithDescription("All uploads failed to process. Please try again.")
+                    .WithColor(Color.Red)
+                    .Build();
+            });
+            return;
+        }
+
+        var footer = failCount > 0
+            ? $"{failCount} upload(s) failed | Click a button to view full details"
+            : "Click a button to view full details";
+
+        var embed = new EmbedBuilder()
+            .WithTitle($"Batch Upload — {successes.Count} report(s) processed")
+            .WithColor(Color.Green)
+            .WithFooter(footer);
+
+        for (int i = 0; i < successes.Count; i++)
+        {
+            var report = successes[i]!.BattleData!;
+            var playerName = report.Player.Username ?? report.Player.InGamePlayerId ?? "Unknown";
+            var enemyName = report.Enemy.Username ?? report.Enemy.InGamePlayerId ?? "Unknown";
+            embed.AddField(
+                $"{i + 1}. {playerName} vs {enemyName}",
+                $"**Type:** {report.BattleType} | **Date:** {report.BattleDate:yyyy-MM-dd}",
+                inline: false);
+        }
+
+        var components = new ComponentBuilder();
+        for (int i = 0; i < successes.Count; i++)
+        {
+            components.WithButton(
+                label: $"{i + 1}",
+                customId: $"report_details:{successes[i]!.BattleData!.ReportId}",
+                style: ButtonStyle.Secondary,
+                row: i / 5);
+        }
+
+        await processingMessage.ModifyAsync(m =>
+        {
+            m.Content = string.Empty;
+            m.Embed = embed.Build();
+            m.Components = components.Build();
+        });
+    }
 
     private async Task<Guid> GetUserId(string discordUserId)
     {

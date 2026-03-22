@@ -11,16 +11,12 @@ namespace ApexGirlReportAnalyzer.Bot.Services;
 public class DiscordBotService : BackgroundService
 {
     private readonly DiscordSocketClient _client;
-
     private readonly DiscordLogService _discordLogService;
-
     private readonly IOptions<DiscordBotOptions> _options;
-
     private readonly InteractionService _interactionService;
-
     private readonly IServiceProvider _serviceProvider;
-
     private readonly ScreenshotHandler _screenshotHandler;
+    private readonly ILogger<DiscordBotService> _logger;
 
     public DiscordBotService(
         DiscordSocketClient client,
@@ -28,7 +24,8 @@ public class DiscordBotService : BackgroundService
         IServiceProvider serviceProvider,
         IOptions<DiscordBotOptions> options,
         InteractionService interactionService,
-        ScreenshotHandler screenshotHandler)
+        ScreenshotHandler screenshotHandler,
+        ILogger<DiscordBotService> logger)
     {
         _client = client;
         _discordLogService = discordLogService;
@@ -36,6 +33,7 @@ public class DiscordBotService : BackgroundService
         _options = options;
         _interactionService = interactionService;
         _screenshotHandler = screenshotHandler;
+        _logger = logger;
 
         _client.Log += _discordLogService.LogAsync;
         _client.Ready += OnReadyAsync;
@@ -50,24 +48,35 @@ public class DiscordBotService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Discord bot starting...");
+
         await _client.LoginAsync(TokenType.Bot, _options.Value.Token);
         await _client.StartAsync();
-
         await _client.SetActivityAsync(new Game("Analyzing Top Girl Reports"));
 
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        try
+        {
+            await Task.Delay(Timeout.Infinite, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown via stoppingToken — not an error
+        }
     }
 
     private async Task OnReadyAsync()
     {
+        _logger.LogInformation("Discord bot connected as {Username}", _client.CurrentUser.Username);
         await RegisterCommands();
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Discord bot stopping...");
         await _client.LogoutAsync();
         await _client.StopAsync();
         await base.StopAsync(cancellationToken);
+        _logger.LogInformation("Discord bot stopped.");
     }
 
     private async Task RegisterCommands()
@@ -76,8 +85,10 @@ public class DiscordBotService : BackgroundService
 
 #if DEBUG
         await _interactionService.RegisterCommandsToGuildAsync(_options.Value.TestGuildId);
+        _logger.LogInformation("Slash commands registered to test guild {GuildId}.", _options.Value.TestGuildId);
 #else
         await _interactionService.RegisterCommandsGloballyAsync();
+        _logger.LogInformation("Slash commands registered globally.");
 #endif
     }
 }

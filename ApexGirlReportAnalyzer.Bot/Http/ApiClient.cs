@@ -224,7 +224,7 @@ public class ApiClient
     /// <summary>
     /// Assigns a tier to a user by their Discord ID.
     /// </summary>
-    public async Task<bool> AssignTierToUserAsync(string discordUserId, Guid tierId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, bool userNotFound)> AssignTierToUserAsync(string discordUserId, Guid tierId, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Assigning tier {TierId} to user {DiscordUserId}", tierId, discordUserId);
 
@@ -233,7 +233,9 @@ public class ApiClient
             null,
             cancellationToken);
 
-        return response.IsSuccessStatusCode;
+        if (response.IsSuccessStatusCode) return (true, false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return (false, true);
+        return (false, false);
     }
 
     #region Private Helper Methods
