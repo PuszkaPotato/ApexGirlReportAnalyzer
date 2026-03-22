@@ -23,7 +23,7 @@ This document tracks project phases, timeline, and progress.
 - Cost tracking ($0.0016 per upload)
 
 **Technical Implementation:**
-- Clean 3-layer architecture (API/Core/Infrastructure)
+- Clean 4-layer architecture (API/Core/Infrastructure/Models)
 - 10 database entities with proper relationships
 - EF Core migrations tracked and applied
 - OpenAI Vision API integration
@@ -103,7 +103,9 @@ This document tracks project phases, timeline, and progress.
 
 **Deliverables:**
 - API-side endpoints for bot (server config, user get-or-create) ✓
-- Bot project scaffold (Worker Service + Discord.Net)
+- Bot project scaffold (Worker Service + Discord.Net) ✓
+- Config classes + ApiClient (typed HttpClient for all API calls) ✓
+- DiscordBotService (BackgroundService managing Discord client lifecycle)
 - /setup slash command (configure upload channel)
 - Screenshot listener (core feature — image → API → embed reply)
 - /reports slash command (query battle reports)
