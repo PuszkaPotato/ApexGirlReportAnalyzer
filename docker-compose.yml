@@ -17,9 +17,7 @@ services:
       retries: 5
 
   api:
-    build:
-      context: .
-      dockerfile: ApexGirlReportAnalyzer.API/Dockerfile
+    image: ghcr.io/puszkapotato/apexgirl-api:latest
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -41,9 +39,7 @@ services:
       start_period: 30s
 
   bot:
-    build:
-      context: .
-      dockerfile: ApexGirlReportAnalyzer.Bot/Dockerfile
+    image: ghcr.io/puszkapotato/apexgirl-bot:latest
     environment:
       Bot__Token: ${BOT_TOKEN}
       Bot__DeveloperId: ${DEVELOPER_DISCORD_ID}
