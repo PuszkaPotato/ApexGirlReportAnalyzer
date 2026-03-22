@@ -24,6 +24,8 @@ builder.Services.AddSingleton<SetupService>();
 builder.Services.AddSingleton<ReportsService>();
 builder.Services.AddSingleton<TierService>();
 builder.Services.AddSingleton<PendingUploadService>();
+builder.Services.AddSingleton<ApiHealthService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<ApiHealthService>());
 
 builder.Services.AddHttpClient<ScreenshotHandler>();
 

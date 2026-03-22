@@ -1,10 +1,12 @@
-﻿using ApexGirlReportAnalyzer.Models.Enums;
+﻿using ApexGirlReportAnalyzer.Bot.Preconditions;
 using ApexGirlReportAnalyzer.Bot.Services;
+using ApexGirlReportAnalyzer.Models.Enums;
 using Discord;
 using Discord.Interactions;
 
 namespace ApexGirlReportAnalyzer.Bot.Modules;
 
+[RequireApiHealthy]
 [Group("setup", "Commands for setting up the bot in your server.")]
 public class SetupModule : InteractionModuleBase<SocketInteractionContext>
 {

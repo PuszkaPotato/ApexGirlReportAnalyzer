@@ -22,6 +22,7 @@ public class ScreenshotHandler
     private readonly HttpClient _httpClient;
     private readonly SetupService _setupService;
     private readonly PendingUploadService _pendingUploadService;
+    private readonly ApiHealthService _apiHealthService;
 
     private static readonly Regex MetadataRegex = new(
         @"(\d{5,6})\s+(team[1-6]|b[1-6]|[1-6])\s+(\d{3,4})\s+(\d{5,6})\s+(team[1-6]|b[1-6]|[1-6])\s+(\d{3,4})",
@@ -32,13 +33,15 @@ public class ScreenshotHandler
         ILogger<ScreenshotHandler> logger,
         HttpClient httpClient,
         SetupService setupService,
-        PendingUploadService pendingUploadService)
+        PendingUploadService pendingUploadService,
+        ApiHealthService apiHealthService)
     {
         _apiClient = apiClient;
         _logger = logger;
         _httpClient = httpClient;
         _setupService = setupService;
         _pendingUploadService = pendingUploadService;
+        _apiHealthService = apiHealthService;
     }
 
     public async Task MessageReceived(SocketMessage message)
@@ -65,6 +68,12 @@ public class ScreenshotHandler
 
         var userMessage = message as IUserMessage;
         if (userMessage == null) return;
+
+        if (!_apiHealthService.IsHealthy)
+        {
+            await userMessage.ReplyAsync("The service is currently unavailable. Please try again later.");
+            return;
+        }
 
         _logger.LogInformation("Received {Count} image attachment(s) in channel {ChannelId} from user {UserId}",
             imageAttachments.Count, message.Channel.Id, message.Author.Id);

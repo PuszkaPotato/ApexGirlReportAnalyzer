@@ -16,6 +16,7 @@ public class DiscordBotService : BackgroundService
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ScreenshotHandler _screenshotHandler;
+    private readonly ApiHealthService _apiHealthService;
     private readonly ILogger<DiscordBotService> _logger;
 
     public DiscordBotService(
@@ -25,6 +26,7 @@ public class DiscordBotService : BackgroundService
         IOptions<DiscordBotOptions> options,
         InteractionService interactionService,
         ScreenshotHandler screenshotHandler,
+        ApiHealthService apiHealthService,
         ILogger<DiscordBotService> logger)
     {
         _client = client;
@@ -33,6 +35,7 @@ public class DiscordBotService : BackgroundService
         _options = options;
         _interactionService = interactionService;
         _screenshotHandler = screenshotHandler;
+        _apiHealthService = apiHealthService;
         _logger = logger;
 
         _client.Log += _discordLogService.LogAsync;
@@ -52,7 +55,6 @@ public class DiscordBotService : BackgroundService
 
         await _client.LoginAsync(TokenType.Bot, _options.Value.Token);
         await _client.StartAsync();
-        await _client.SetActivityAsync(new Game("Analyzing Top Girl Reports"));
 
         try
         {
@@ -67,6 +69,7 @@ public class DiscordBotService : BackgroundService
     private async Task OnReadyAsync()
     {
         _logger.LogInformation("Discord bot connected as {Username}", _client.CurrentUser.Username);
+        await _apiHealthService.UpdatePresenceAsync();
         await RegisterCommands();
     }
 

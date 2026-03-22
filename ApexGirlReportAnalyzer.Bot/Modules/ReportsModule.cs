@@ -1,4 +1,5 @@
 using ApexGirlReportAnalyzer.Bot.Handlers;
+using ApexGirlReportAnalyzer.Bot.Preconditions;
 using ApexGirlReportAnalyzer.Bot.Services;
 using ApexGirlReportAnalyzer.Models.DTOs;
 using Discord;
@@ -6,6 +7,7 @@ using Discord.Interactions;
 
 namespace ApexGirlReportAnalyzer.Bot.Modules;
 
+[RequireApiHealthy]
 public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ReportsService _reportsService;

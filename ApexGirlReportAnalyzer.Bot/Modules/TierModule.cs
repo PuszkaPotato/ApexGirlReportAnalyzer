@@ -6,6 +6,7 @@ using Discord.WebSocket;
 
 namespace ApexGirlReportAnalyzer.Bot.Modules;
 
+[RequireApiHealthy]
 [RequireDeveloper]
 public class TierModule : InteractionModuleBase<SocketInteractionContext>
 {
