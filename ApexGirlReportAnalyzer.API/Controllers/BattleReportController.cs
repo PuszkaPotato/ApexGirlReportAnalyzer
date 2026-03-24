@@ -39,6 +39,7 @@ public class BattleReportController : ControllerBase
     /// <param name="groupTag">Battle report by group Tag</param>
     /// <param name="limit">Maximum number of reports to return (default 10)</param>
     /// <param name="offset">Number of reports to skip for pagination (default 0)</param>
+    /// <param name="requestingDiscordUserId">Optional: Discord user ID of the requester for privacy filtering.</param>
     [HttpGet]
     public async Task<IActionResult> GetBattleReports(
         [FromQuery] Guid? uploadId = null,
@@ -49,9 +50,13 @@ public class BattleReportController : ControllerBase
         [FromQuery] string? inGameId = null,
         [FromQuery] string? groupTag = null,
         [FromQuery] int limit = 10,
-        [FromQuery] int offset = 0)
+        [FromQuery] int offset = 0,
+        [FromQuery] string? requestingDiscordUserId = null)
     {
-        var (reports, totalCount) = await _battleReportService.GetBattleReportAsync(uploadId, battleDate, battleType, userId, participant, inGameId, groupTag, limit, offset);
+        var developerDiscordId = _configuration["App:DeveloperDiscordId"];
+        var isDeveloper = !string.IsNullOrEmpty(developerDiscordId) && requestingDiscordUserId == developerDiscordId;
+
+        var (reports, totalCount) = await _battleReportService.GetBattleReportAsync(uploadId, battleDate, battleType, userId, participant, inGameId, groupTag, limit, offset, requestingDiscordUserId, isDeveloper);
 
         var response = new BattleReportListResponse
         {
@@ -99,10 +104,11 @@ public class BattleReportController : ControllerBase
     /// Get a single battle report by its ID.
     /// </summary>
     /// <param name="reportId">The ID of the battle report to retrieve.</param>
+    /// <param name="requestingDiscordUserId">Optional: Discord user ID of the requester for privacy filtering.</param>
     [HttpGet("reportId")]
-    public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId)
+    public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId, [FromQuery] string? requestingDiscordUserId = null)
     {
-        var report = await _battleReportService.GetBattleReportByIdAsync(reportId);
+        var report = await _battleReportService.GetBattleReportByIdAsync(reportId, requestingDiscordUserId);
         if (report == null)
             return NotFound(new ErrorResponse { Message = $"No battle report found with ID: {reportId}", Type = "NotFound" });
         return Ok(report);

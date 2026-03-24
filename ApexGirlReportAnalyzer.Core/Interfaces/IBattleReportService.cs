@@ -26,9 +26,11 @@ public interface IBattleReportService
         string? inGameId = null,
         string? groupTag = null,
         int limit = 10,
-        int offset = 0);
+        int offset = 0,
+        string? requestingDiscordUserId = null,
+        bool isDeveloper = false);
 
-    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId);
+    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null);
 
     Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId, int? playerTeamRank = null, int? enemyTeamRank = null, int? playerServer = null, int? enemyServer = null);
 

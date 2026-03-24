@@ -24,19 +24,29 @@ public class BattleReportService : IBattleReportService
 
     public async Task<(List<BattleReportResponse> Reports, int totalCount)> GetBattleReportAsync(
         Guid? uploadId = null,
-        DateTime? battleDate = null, 
-        string? battleType = null, 
+        DateTime? battleDate = null,
+        string? battleType = null,
         Guid? userId = null,
         string? participant = null,
-        string? inGameId = null,  
+        string? inGameId = null,
         string? groupTag = null,
         int limit = 10,
-        int offset = 0)
+        int offset = 0,
+        string? requestingDiscordUserId = null,
+        bool isDeveloper = false)
     {
         var query = _context.BattleReports
             .Include(br => br.BattleSides)
             .Include(br => br.Upload)
+                .ThenInclude(u => u.User)
             .AsQueryable();
+
+        if (!isDeveloper)
+        {
+            query = query.Where(br =>
+                br.Upload.PrivacyScope == PrivacyScope.Public ||
+                (requestingDiscordUserId != null && br.Upload.User.DiscordId == requestingDiscordUserId));
+        }
 
         if (uploadId.HasValue)
             query = query.Where(br => br.UploadId == uploadId.Value);
@@ -67,17 +77,22 @@ public class BattleReportService : IBattleReportService
         return (mappedReports, totalCount);
     }
 
-    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId)
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null)
     {
-        var query = await _context.BattleReports
+        var report = await _context.BattleReports
             .Include(br => br.BattleSides)
             .Include(br => br.Upload)
+                .ThenInclude(u => u.User)
             .FirstOrDefaultAsync(br => br.Id == reportId);
 
-        if (query == null)
+        if (report == null)
             return null;
 
-        return BattleReportMapper.ToDto(query, query.Upload);
+        var isOwner = requestingDiscordUserId != null && report.Upload.User.DiscordId == requestingDiscordUserId;
+        if (report.Upload.PrivacyScope != PrivacyScope.Public && !isOwner)
+            return null;
+
+        return BattleReportMapper.ToDto(report, report.Upload);
     }
 
     public async Task<string> ExportBattleReportsCsvAsync(

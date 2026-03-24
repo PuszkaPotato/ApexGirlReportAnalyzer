@@ -145,9 +145,10 @@ public class ApiClient
         DateTime? battleDate = null,
         int limit = 10,
         int offset = 0,
+        string? requestingDiscordUserId = null,
         CancellationToken cancellationToken = default)
     {
-        var query = BuildReportsQueryString(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset);
+        var query = BuildReportsQueryString(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset, requestingDiscordUserId);
         _logger.LogDebug("Querying battle reports: {Query}", query);
 
         var response = await _httpClient.GetAsync($"api/battlereport?{query}", cancellationToken);
@@ -188,11 +189,15 @@ public class ApiClient
     /// <summary>
     /// Gets a single battle report by its ID.
     /// </summary>
-    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, CancellationToken cancellationToken = default)
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Getting battle report {ReportId}", reportId);
 
-        var response = await _httpClient.GetAsync($"api/battlereport/reportId?reportId={reportId}", cancellationToken);
+        var url = $"api/battlereport/reportId?reportId={reportId}";
+        if (requestingDiscordUserId != null)
+            url += $"&requestingDiscordUserId={Uri.EscapeDataString(requestingDiscordUserId)}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
 
         return await DeserializeResponseAsync<BattleReportResponse>(response, nameof(GetBattleReportByIdAsync));
     }
@@ -267,7 +272,7 @@ public class ApiClient
         return JsonSerializer.Deserialize<T>(json, JsonOptions);
     }
 
-    private static string BuildReportsQueryString(Guid? userId, string? participant, string? battleType, string? groupTag, string? inGameId, DateTime? battleDate, int limit, int offset)
+    private static string BuildReportsQueryString(Guid? userId, string? participant, string? battleType, string? groupTag, string? inGameId, DateTime? battleDate, int limit, int offset, string? requestingDiscordUserId = null)
     {
         var parts = new List<string>();
 
@@ -283,6 +288,8 @@ public class ApiClient
             parts.Add($"inGameId={Uri.EscapeDataString(inGameId)}");
         if (battleDate.HasValue)
             parts.Add($"battleDate={battleDate.Value:yyyy-MM-dd}");
+        if (requestingDiscordUserId != null)
+            parts.Add($"requestingDiscordUserId={Uri.EscapeDataString(requestingDiscordUserId)}");
 
         parts.Add($"limit={limit}");
         parts.Add($"offset={offset}");

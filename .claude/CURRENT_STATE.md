@@ -1,8 +1,8 @@
 # ApexGirl Report Analyzer - Current State
 
-**Last Updated:** March 14, 2026
+**Last Updated:** March 24, 2026
 **Phase:** 3 (Discord Bot) - IN PROGRESS
-**Status:** Screenshot handler done, tier slash command done — tier modal is next on `feature/discord-bot` branch
+**Status:** Bot deployed to production (Docker/OVH VPS). All slash commands working. Logging + server join event next.
 
 ---
 
@@ -147,19 +147,29 @@
 ## What Doesn't Work Yet
 
 ### Not Implemented
-- **Bot project** — scaffold exists, configuration classes next
 - **Testing** - No unit or integration tests
 - **Analytics Endpoints** - Stats and aggregations
 - **Admin Features** - No admin panel
 - **Error Reporting** - Users can't report bad extractions
-- **Deployment** - Not hosted anywhere (local only)
 
 ### Known Limitations
 - No rate limiting beyond quota system
 - No caching
 
 ### Deferred Tasks
-- **`/assign-tier` on unregistered user** — currently returns generic "tier not found" error; should return "User not registered" message. Do NOT auto-create the user — first upload will eventually trigger a privacy policy/ToS acceptance flow which is when the user record should be created.
+- **Tier assignment modal** (`TierModalModule.cs`) — deferred, low priority
+
+### TODO: Planned Features
+- **Server join event** — when the bot is invited to a new server, send a welcome/setup message in the first available channel (or system channel)
+- **Developer Discord logging** — dedicated developer Discord server + channel where the bot logs important events:
+  - Errors and exceptions
+  - Failed uploads (which server, which user, reason)
+  - Bot invited to a new server (which server, invited by whom)
+  - Bot removed from a server
+  - Any other operationally important events
+  - Config: `DeveloperDiscordServerId` + `DeveloperLogChannelId` env vars (or appsettings)
+- **Per-server logging** — servers can configure a log channel (already stored in `DiscordServer.LogChannelId`); decide what events to log there (upload results? errors? tier changes?) — needs design decision
+- **Tier modal** — proper modal UI for tier creation/assignment instead of slash command parameters
 
 ---
 
@@ -185,23 +195,24 @@ See `.claude/docs/code-standards.md`:
 
 ## Next Steps (Priority Order)
 
-### Phase 3: Bot Project (branch: `feature/discord-bot`)
-1. ~~**Config classes** — `DiscordBotOptions`, `ApiOptions`; wire up `appsettings.json` + user secrets~~ ✓ Done
+### Phase 3: Bot Project
+1. ~~**Config classes** — `DiscordBotOptions`, `ApiOptions`~~ ✓ Done
 2. ~~**`ApiClient`** — Typed HttpClient for all API calls~~ ✓ Done
-3. ~~**`DiscordBotService`** — BackgroundService managing Discord client lifecycle~~ ✓ Done
-4. ~~**`/setup` slash commands** — `SetupModule.cs` (`init`, `view`, `update`)~~ ✓ Done
-5. ~~**`/reports` slash command** — `ReportsModule.cs`~~ ✓ Done
-6. ~~**Screenshot handler** — `ScreenshotHandler.cs` (core feature)~~ ✓ Done
-7. ~~**`/assign-tier` slash command** — `TierModule.cs`~~ ✓ Done
-8. **Tier assignment modal** — `TierModalModule.cs` ← **NEXT**
-9. **Polish** — Graceful shutdown, logging
-
-### Before Pre-Alpha Testing
-- **CSV Export** — export battle reports to CSV
+3. ~~**`DiscordBotService`** — BackgroundService + lifecycle logging + graceful shutdown~~ ✓ Done
+4. ~~**`/setup` slash commands** — `init`, `view`, `update`~~ ✓ Done
+5. ~~**`/reports` slash command**~~ ✓ Done
+6. ~~**Screenshot handler** — single + batch, per-item failure reasons~~ ✓ Done
+7. ~~**`/tiers`, `/assign-tier`, `/assign-tier-server`, `/quota`, `/create-tier`**~~ ✓ Done
+8. ~~**`/help` command**~~ ✓ Done
+9. ~~**API health check + rich presence**~~ ✓ Done
+10. ~~**Docker deployment** — Compose + GitHub Actions CI~~ ✓ Done
+11. **Server join event** — welcome message when bot is added to a server ← **NEXT**
+12. **Developer Discord logging** — log channel in dev server for errors, failed uploads, invites, removals
+13. **Per-server logging** — decide what to surface in server log channels
 
 ### Future Phases
-- **Phase 4:** Analytics & Polish
-- **Phase 5:** Deployment & Launch
+- **Phase 4:** Analytics & Polish (stats endpoints, CSV export)
+- **Phase 5:** Launch
 
 ---
 
