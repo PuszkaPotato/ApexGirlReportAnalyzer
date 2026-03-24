@@ -30,7 +30,7 @@ public interface IBattleReportService
         string? requestingDiscordUserId = null,
         bool isDeveloper = false);
 
-    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null);
+    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, bool isDeveloper = false);
 
     Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId, int? playerTeamRank = null, int? enemyTeamRank = null, int? playerServer = null, int? enemyServer = null);
 

@@ -77,7 +77,7 @@ public class BattleReportService : IBattleReportService
         return (mappedReports, totalCount);
     }
 
-    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null)
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, bool isDeveloper = false)
     {
         var report = await _context.BattleReports
             .Include(br => br.BattleSides)
@@ -88,9 +88,12 @@ public class BattleReportService : IBattleReportService
         if (report == null)
             return null;
 
-        var isOwner = requestingDiscordUserId != null && report.Upload.User.DiscordId == requestingDiscordUserId;
-        if (report.Upload.PrivacyScope != PrivacyScope.Public && !isOwner)
-            return null;
+        if (!isDeveloper)
+        {
+            var isOwner = requestingDiscordUserId != null && report.Upload.User.DiscordId == requestingDiscordUserId;
+            if (report.Upload.PrivacyScope != PrivacyScope.Public && !isOwner)
+                return null;
+        }
 
         return BattleReportMapper.ToDto(report, report.Upload);
     }

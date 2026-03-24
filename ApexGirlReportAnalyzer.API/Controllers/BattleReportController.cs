@@ -108,7 +108,10 @@ public class BattleReportController : ControllerBase
     [HttpGet("reportId")]
     public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId, [FromQuery] string? requestingDiscordUserId = null)
     {
-        var report = await _battleReportService.GetBattleReportByIdAsync(reportId, requestingDiscordUserId);
+        var developerDiscordId = _configuration["App:DeveloperDiscordId"];
+        var isDeveloper = !string.IsNullOrEmpty(developerDiscordId) && requestingDiscordUserId == developerDiscordId;
+
+        var report = await _battleReportService.GetBattleReportByIdAsync(reportId, requestingDiscordUserId, isDeveloper);
         if (report == null)
             return NotFound(new ErrorResponse { Message = $"No battle report found with ID: {reportId}", Type = "NotFound" });
         return Ok(report);
