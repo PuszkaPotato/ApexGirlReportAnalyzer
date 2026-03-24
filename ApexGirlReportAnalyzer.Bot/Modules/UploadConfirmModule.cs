@@ -62,7 +62,8 @@ public class UploadConfirmModule : InteractionModuleBase<SocketInteractionContex
                 playerTeamRank: data.PlayerTeamRank,
                 enemyTeamRank: data.EnemyTeamRank,
                 playerServer: data.PlayerServer,
-                enemyServer: data.EnemyServer);
+                enemyServer: data.EnemyServer,
+                privacyScope: data.PrivacyScope);
 
             await ModifyOriginalResponseAsync(m =>
             {

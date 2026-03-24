@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using ApexGirlReportAnalyzer.Bot.Http;
 using ApexGirlReportAnalyzer.Bot.Services;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Enums;
 using Discord;
 using Discord.WebSocket;
 
@@ -87,7 +88,7 @@ public class ScreenshotHandler
                 : $"Processing {imageAttachments.Count} reports...";
 
             var processingMessage = await userMessage.ReplyAsync(processingText);
-            await ProcessBatchAsync(processingMessage, userMessage, imageAttachments, guild.Id.ToString());
+            await ProcessBatchAsync(processingMessage, userMessage, imageAttachments, guild.Id.ToString(), server.DefaultReportPrivacy);
             return;
         }
 
@@ -110,7 +111,8 @@ public class ScreenshotHandler
                 PlayerServer: metadata.PlayerServer,
                 EnemyInGameId: metadata.EnemyInGameId,
                 EnemyTeamRank: metadata.EnemyTeamRank,
-                EnemyServer: metadata.EnemyServer));
+                EnemyServer: metadata.EnemyServer,
+                PrivacyScope: server.DefaultReportPrivacy));
 
             var components = new ComponentBuilder()
                 .WithButton("Confirm", $"confirm_upload:{correlationId}", ButtonStyle.Success)
@@ -131,7 +133,8 @@ public class ScreenshotHandler
                 discordChannelId: message.Channel.Id.ToString(),
                 discordMessageId: message.Id.ToString(),
                 imageStream: await DownloadImageAsync(attachment.Url),
-                fileName: attachment.Filename);
+                fileName: attachment.Filename,
+                privacyScope: server.DefaultReportPrivacy);
 
             await processingMsg.ModifyAsync(m =>
             {
@@ -234,7 +237,8 @@ public class ScreenshotHandler
         IUserMessage processingMessage,
         IUserMessage originalMessage,
         List<Discord.Attachment> attachments,
-        string guildId)
+        string guildId,
+        PrivacyScope privacyScope)
     {
         Guid userId;
         try
@@ -268,7 +272,8 @@ public class ScreenshotHandler
                     discordChannelId: originalMessage.Channel.Id.ToString(),
                     discordMessageId: originalMessage.Id.ToString(),
                     imageStream: await DownloadImageAsync(attachment.Url),
-                    fileName: attachment.Filename);
+                    fileName: attachment.Filename,
+                    privacyScope: privacyScope);
 
                 results.Add(result);
             }

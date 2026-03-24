@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Enums;
 
 namespace ApexGirlReportAnalyzer.Bot.Http;
 
@@ -65,6 +66,7 @@ public class ApiClient
         int? enemyTeamRank = null,
         int? playerServer = null,
         int? enemyServer = null,
+        PrivacyScope privacyScope = PrivacyScope.Public,
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Uploading screenshot for user {UserId} in server {ServerId}", userId, discordServerId);
@@ -95,6 +97,7 @@ public class ApiClient
             content.Add(new StringContent(playerServer.Value.ToString()), "playerServer");
         if (enemyServer.HasValue)
             content.Add(new StringContent(enemyServer.Value.ToString()), "enemyServer");
+        content.Add(new StringContent(privacyScope.ToString()), "privacyScope");
 
         var response = await _httpClient.PostAsync("api/upload", content, cancellationToken);
 

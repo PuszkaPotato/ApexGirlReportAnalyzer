@@ -1,4 +1,5 @@
 ﻿using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Enums;
 
 namespace ApexGirlReportAnalyzer.Core.Interfaces;
 
@@ -27,5 +28,6 @@ public interface IUploadService
         int? playerTeamRank = null,
         int? enemyTeamRank = null,
         int? playerServer = null,
-        int? enemyServer = null);
+        int? enemyServer = null,
+        PrivacyScope privacyScope = PrivacyScope.Public);
 }

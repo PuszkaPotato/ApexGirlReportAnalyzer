@@ -1,6 +1,7 @@
 ﻿using ApexGirlReportAnalyzer.API.Helpers;
 using ApexGirlReportAnalyzer.Core.Interfaces;
 using ApexGirlReportAnalyzer.Models.DTOs;
+using ApexGirlReportAnalyzer.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,6 +39,7 @@ public class UploadController : ControllerBase
     /// <param name="enemyTeamRank">Optional: Enemy's team rank (1-6)</param>
     /// <param name="playerServer">Optional: Player's server number</param>
     /// <param name="enemyServer">Optional: Enemy's server number</param>
+    /// <param name="privacyScope">Optional: Privacy scope for the report (default: Public)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Analysis results or error</returns>
     [HttpPost]
@@ -56,6 +58,7 @@ public class UploadController : ControllerBase
         [FromForm] int? enemyTeamRank = null,
         [FromForm] int? playerServer = null,
         [FromForm] int? enemyServer = null,
+        [FromForm] PrivacyScope privacyScope = PrivacyScope.Public,
         CancellationToken cancellationToken = default)
     {
         try
@@ -90,7 +93,8 @@ public class UploadController : ControllerBase
                 playerTeamRank,
                 enemyTeamRank,
                 playerServer,
-                enemyServer);
+                enemyServer,
+                privacyScope);
 
             // Return appropriate status code
             if (result.Success)
@@ -121,6 +125,7 @@ public class UploadController : ControllerBase
     /// <param name="images">Screenshot image files (PNG or JPEG, max 20)</param>
     /// <param name="userId">User ID making the upload</param>
     /// <param name="discordServerId">Optional: Discord server ID if uploaded via bot</param>
+    /// <param name="privacyScope">Optional: Privacy scope for all reports in the batch (default: Public)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Batch analysis results or error</returns>
     [HttpPost("batch")]
@@ -131,6 +136,7 @@ public class UploadController : ControllerBase
         IFormFileCollection images,
         [FromForm] Guid userId,
         [FromForm] string? discordServerId = null,
+        [FromForm] PrivacyScope privacyScope = PrivacyScope.Public,
         CancellationToken cancellationToken = default)
     {
         try
@@ -181,8 +187,7 @@ public class UploadController : ControllerBase
                         userId,
                         image.FileName,
                         discordServerId,
-                        null, // No individual playerInGameId in batch
-                        null); // No individual enemyInGameId in batch
+                        privacyScope: privacyScope);
 
                     results.Add(result);
 

@@ -47,7 +47,8 @@ public class UploadService : IUploadService
         int? playerTeamRank = null,
         int? enemyTeamRank = null,
         int? playerServer = null,
-        int? enemyServer = null)
+        int? enemyServer = null,
+        PrivacyScope privacyScope = PrivacyScope.Public)
     {
         Upload? upload = null;
 
@@ -80,7 +81,7 @@ public class UploadService : IUploadService
                 return duplicateResponse;
             }
 
-            upload = await CreatePendingUploadAsync(userId, imageHash, discordServerId, discordChannelId, discordMessageId);
+            upload = await CreatePendingUploadAsync(userId, imageHash, discordServerId, discordChannelId, discordMessageId, privacyScope);
 
             var battleData = await _openAIService.AnalyzeScreenshotAsync(base64Image);
 
@@ -171,7 +172,8 @@ public class UploadService : IUploadService
         string imageHash,
         string? discordServerId,
         string? discordChannelId = null,
-        string? discordMessageId = null)
+        string? discordMessageId = null,
+        PrivacyScope privacyScope = PrivacyScope.Public)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
 
@@ -183,6 +185,7 @@ public class UploadService : IUploadService
             DiscordServerId = discordServerId,
             DiscordChannelId = discordChannelId,
             DiscordMessageId = discordMessageId,
+            PrivacyScope = privacyScope,
             Status = UploadStatus.Pending,
             OpenAiModel = model,
             TokenEstimate = 0,

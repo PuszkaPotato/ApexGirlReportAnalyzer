@@ -1,3 +1,5 @@
+using ApexGirlReportAnalyzer.Models.Enums;
+
 namespace ApexGirlReportAnalyzer.Bot.Services;
 
 public record PendingUploadData(
@@ -12,7 +14,8 @@ public record PendingUploadData(
     int? PlayerServer,
     string? EnemyInGameId,
     int? EnemyTeamRank,
-    int? EnemyServer);
+    int? EnemyServer,
+    PrivacyScope PrivacyScope);
 
 /// <summary>
 /// Stores upload data temporarily while waiting for user confirmation via Discord button.
