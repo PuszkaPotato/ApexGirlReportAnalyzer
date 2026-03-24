@@ -195,6 +195,18 @@ public class ApiClient
     }
 
     /// <summary>
+    /// Creates a new tier.
+    /// </summary>
+    public async Task<TierResponse?> CreateTierAsync(CreateTierRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Creating tier {TierName}", request.Name);
+
+        var response = await _httpClient.PostAsJsonAsync("api/tiers", request, cancellationToken);
+
+        return await DeserializeResponseAsync<TierResponse>(response, nameof(CreateTierAsync));
+    }
+
+    /// <summary>
     /// Gets all tiers.
     /// </summary>
     public async Task<List<TierResponse>?> GetTiersAsync(CancellationToken cancellationToken = default)

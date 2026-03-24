@@ -103,30 +103,25 @@ public static class DbSeeder
         };
 
         context.TierLimits.AddRange(tierLimits);
-
-        // Create Test API Key (for development)
-        var testApiKey = new ApiKey
-        {
-            Id = Guid.NewGuid(),
-            Key = "dev-test-key-12345", // In production, this would be hashed!
-            Name = "Development Test Key",
-            Scope = "admin",
-            IsActive = true
-        };
-
-        context.ApiKeys.Add(testApiKey);
-        await context.SaveChangesAsync(); // Persist tiers, limits and api key so subsequent DB queries see them
+        await context.SaveChangesAsync(); // Persist tiers and limits so subsequent DB queries see them
 
         if (isDevelopment)
         {
-            // Create test user in development
+            // Create test API key and test user in development only
+            var testApiKey = new ApiKey
+            {
+                Id = Guid.NewGuid(),
+                Key = "dev-test-key-12345",
+                Name = "Development Test Key",
+                Scope = "admin",
+                IsActive = true
+            };
+            context.ApiKeys.Add(testApiKey);
+            await context.SaveChangesAsync();
+
             return await EnsureTestUserAsync(context, logger);
         }
 
-        // Save everything
-        await context.SaveChangesAsync();
-
-        // If we reached here in DEBUG and no test user was created/found above, return null.
         return null;
     }
 

@@ -1,5 +1,6 @@
 using ApexGirlReportAnalyzer.Bot.Preconditions;
 using ApexGirlReportAnalyzer.Bot.Services;
+using ApexGirlReportAnalyzer.Models.DTOs;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -15,6 +16,36 @@ public class TierModule : InteractionModuleBase<SocketInteractionContext>
     public TierModule(TierService tierService)
     {
         _tierService = tierService;
+    }
+
+    [SlashCommand("create-tier", "Create a new tier.")]
+    public async Task CreateTierAsync(
+        [Summary("name", "The name of the tier")] string name,
+        [Summary("is-default", "Whether this is the default tier for new users")] bool isDefault = false,
+        [Summary("user-daily", "User daily upload limit")] int userDaily = 10,
+        [Summary("user-monthly", "User monthly upload limit")] int userMonthly = 100,
+        [Summary("server-daily", "Server daily upload limit")] int serverDaily = 50,
+        [Summary("server-monthly", "Server monthly upload limit")] int serverMonthly = 500)
+    {
+        await DeferAsync(ephemeral: true);
+
+        var request = new CreateTierRequest
+        {
+            Name = name,
+            IsDefault = isDefault,
+            UserLimit = new TierLimitRequest { DailyRequestLimit = userDaily, MonthlyRequestLimit = userMonthly },
+            ServerLimit = new TierLimitRequest { DailyRequestLimit = serverDaily, MonthlyRequestLimit = serverMonthly }
+        };
+
+        var tier = await _tierService.CreateTierAsync(request);
+
+        if (tier == null)
+        {
+            await FollowupAsync($"Failed to create tier **{name}** — it may already exist.", ephemeral: true);
+            return;
+        }
+
+        await FollowupAsync($"Tier **{tier.Name}** created successfully. (ID: `{tier.Id}`)", ephemeral: true);
     }
 
     [SlashCommand("tiers", "List all available tiers.")]

@@ -14,6 +14,11 @@ public class TierService
         _logger = logger;
     }
 
+    public async Task<TierResponse?> CreateTierAsync(CreateTierRequest request)
+    {
+        return await _apiClient.CreateTierAsync(request);
+    }
+
     public async Task<List<TierResponse>?> GetTiersAsync()
     {
         return await _apiClient.GetTiersAsync();

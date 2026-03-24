@@ -116,12 +116,13 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
-// Run migrations automatically in production; dev uses InitializeDatabaseAsync below
+// Run migrations and seed base data in production; dev uses InitializeDatabaseAsync below
 if (!app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+    await DbSeeder.SeedAsync(db, isDevelopment: false);
 }
 
 // Initialize and seed the database in development environment
