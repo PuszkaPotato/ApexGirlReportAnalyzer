@@ -57,6 +57,7 @@ public class ApiClient
         Stream imageStream,
         string fileName,
         Guid userId,
+        string discordUserId,
         string discordServerId,
         string? discordChannelId = null,
         string? discordMessageId = null,
@@ -79,6 +80,7 @@ public class ApiClient
 
         content.Add(imageContent, "image", fileName);
         content.Add(new StringContent(userId.ToString()), "userId");
+        content.Add(new StringContent(discordUserId), "discordUserId");
         content.Add(new StringContent(discordServerId), "discordServerId");
 
         if (discordChannelId != null)

@@ -29,5 +29,6 @@ public interface IUploadService
         int? enemyTeamRank = null,
         int? playerServer = null,
         int? enemyServer = null,
-        PrivacyScope privacyScope = PrivacyScope.Public);
+        PrivacyScope privacyScope = PrivacyScope.Public,
+        string? discordUserId = null);
 }

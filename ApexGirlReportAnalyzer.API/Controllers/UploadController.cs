@@ -30,6 +30,7 @@ public class UploadController : ControllerBase
     /// </summary>
     /// <param name="image">Screenshot image file (PNG or JPEG)</param>
     /// <param name="userId">User ID making the upload</param>
+    /// <param name="discordUserId">Discord User ID of the uploader</param>
     /// <param name="discordServerId">Optional: Discord server ID if uploaded via bot</param>
     /// <param name="playerInGameId">Optional: Player's in-game ID</param>
     /// <param name="enemyInGameId">Optional: Enemy's in-game ID</param>
@@ -49,6 +50,7 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> Upload(
         IFormFile image,
         [FromForm] Guid userId,
+        [FromForm] string? discordUserId = null,
         [FromForm] string? discordServerId = null,
         [FromForm] string? playerInGameId = null,
         [FromForm] string? enemyInGameId = null,
@@ -74,8 +76,8 @@ public class UploadController : ControllerBase
                 return imageValidation;
 
             _logger.LogInformation(
-                "Processing upload for user {UserId}. File: {FileName}, Size: {Size} bytes",
-                userId, image.FileName, image.Length);
+                "Processing upload for user {UserId}. File: {FileName}, Size: {Size} bytes, DiscordUserId: {DiscordUserId}, PrivacyScope: {PrivacyScope}",
+                userId, image.FileName, image.Length, discordUserId ?? "null", privacyScope);
 
             // Convert to base64
             var base64Image = await UploadValidationHelper.ConvertToBase64Async(image, cancellationToken);
@@ -94,7 +96,8 @@ public class UploadController : ControllerBase
                 enemyTeamRank,
                 playerServer,
                 enemyServer,
-                privacyScope);
+                privacyScope,
+                discordUserId);
 
             // Return appropriate status code
             if (result.Success)
@@ -135,6 +138,7 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> BatchUpload(
         IFormFileCollection images,
         [FromForm] Guid userId,
+        [FromForm] string? discordUserId = null,
         [FromForm] string? discordServerId = null,
         [FromForm] PrivacyScope privacyScope = PrivacyScope.Public,
         CancellationToken cancellationToken = default)
@@ -187,7 +191,8 @@ public class UploadController : ControllerBase
                         userId,
                         image.FileName,
                         discordServerId,
-                        privacyScope: privacyScope);
+                        privacyScope: privacyScope,
+                        discordUserId: discordUserId);
 
                     results.Add(result);
 

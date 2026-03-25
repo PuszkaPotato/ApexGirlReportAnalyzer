@@ -111,6 +111,7 @@ public class ScreenshotHandler
             var userId = await GetUserId(message.Author.Id.ToString());
             var correlationId = _pendingUploadService.Add(new PendingUploadData(
                 UserId: userId,
+                DiscordUserId: message.Author.Id.ToString(),
                 DiscordServerId: guild.Id.ToString(),
                 DiscordChannelId: message.Channel.Id.ToString(),
                 DiscordMessageId: message.Id.ToString(),
@@ -139,12 +140,19 @@ public class ScreenshotHandler
         {
             var uploadResult = await _apiClient.UploadScreenshotAsync(
                 userId: await GetUserId(message.Author.Id.ToString()),
+                discordUserId: message.Author.Id.ToString(),
                 discordServerId: guild.Id.ToString(),
                 discordChannelId: message.Channel.Id.ToString(),
                 discordMessageId: message.Id.ToString(),
                 imageStream: await DownloadImageAsync(attachment.Url),
                 fileName: attachment.Filename,
                 privacyScope: server.DefaultReportPrivacy);
+
+            _logger.LogWarning(
+                "UploadResult: Success={Success}, BattleDataNull={BattleDataNull}, IsDuplicate={IsDuplicate}",
+                uploadResult?.Success,
+                uploadResult?.BattleData == null,
+                uploadResult?.IsDuplicate);
 
             await processingMsg.ModifyAsync(m =>
             {
@@ -173,16 +181,22 @@ public class ScreenshotHandler
                 .WithDescription("Could not reach the analysis service. Please try again.")
                 .WithColor(Color.Red);
 
-        if (!result.Success || result.BattleData == null)
+        if (result.Success && result.BattleData == null)
             return new EmbedBuilder()
                 .WithTitle("Upload Failed")
-                .WithDescription(result.ErrorMessage ?? "An unexpected error occurred.")
+                .WithDescription("BattleData is null, this is an unexpected error, please report it to the developer")
+                .WithColor(Color.Red);
+
+        if (!result.Success)
+            return new EmbedBuilder()
+                .WithTitle("Upload Failed")
+                .WithDescription("An unexpected error occurred.")
                 .WithColor(Color.Red);
 
         var color = result.IsDuplicate ? Color.Orange : Color.Default;
         var titlePrefix = result.IsDuplicate ? "Duplicate — " : "Battle Report — ";
 
-        return BuildReportEmbed(result.BattleData, titlePrefix, color)
+        return BuildReportEmbed(result.BattleData!, titlePrefix, color)
             .WithFooter(result.RemainingQuota != null
                 ? $"Quota remaining — Daily: {result.RemainingQuota.DailyRemaining} | Monthly: {result.RemainingQuota.MonthlyRemaining}"
                 : string.Empty);
@@ -278,6 +292,7 @@ public class ScreenshotHandler
             {
                 var result = await _apiClient.UploadScreenshotAsync(
                     userId: userId,
+                    discordUserId: originalMessage.Author.Id.ToString(),
                     discordServerId: guildId,
                     discordChannelId: originalMessage.Channel.Id.ToString(),
                     discordMessageId: originalMessage.Id.ToString(),

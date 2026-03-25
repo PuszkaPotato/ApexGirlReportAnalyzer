@@ -4,6 +4,7 @@ namespace ApexGirlReportAnalyzer.Bot.Services;
 
 public record PendingUploadData(
     Guid UserId,
+    string DiscordUserId,
     string DiscordServerId,
     string DiscordChannelId,
     string DiscordMessageId,

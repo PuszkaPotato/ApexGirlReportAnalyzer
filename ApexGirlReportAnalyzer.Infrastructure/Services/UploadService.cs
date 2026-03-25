@@ -48,7 +48,8 @@ public class UploadService : IUploadService
         int? enemyTeamRank = null,
         int? playerServer = null,
         int? enemyServer = null,
-        PrivacyScope privacyScope = PrivacyScope.Public)
+        PrivacyScope privacyScope = PrivacyScope.Public,
+        string? discordUserId = null)
     {
         Upload? upload = null;
 
@@ -75,7 +76,7 @@ public class UploadService : IUploadService
             var imageHash = HashHelper.CalculateSha256(base64Image);
             _logger.LogInformation("Image hash calculated: {ImageHash}", imageHash);
 
-            var duplicateResponse = await CheckForDuplicateAsync(imageHash, quotaValidation.QuotaInfo);
+            var duplicateResponse = await CheckForDuplicateAsync(imageHash, quotaValidation.QuotaInfo, discordUserId, discordServerId);
             if (duplicateResponse != null)
             {
                 return duplicateResponse;
@@ -99,11 +100,22 @@ public class UploadService : IUploadService
 
             await SaveUploadAsync(upload, battleData);
 
-            battleData = await _battleReportService.GetBattleReportByIdAsync(reportId);
+            battleData = await _battleReportService.GetBattleReportByIdAsync(reportId, discordUserId, discordServerId);
+
+            if (battleData == null)
+            {
+                _logger.LogWarning(
+                    "BattleData is null after GetBattleReportByIdAsync. ReportId: {ReportId}, DiscordUserId: {DiscordUserId}, DiscordServerId: {DiscordServerId}, UploadPrivacyScope: {PrivacyScope}",
+                    reportId, discordUserId ?? "null", discordServerId ?? "null", upload.PrivacyScope);
+                return CreateErrorResponse(
+                    "Unable to retrieve battle data. This may be due to privacy restrictions or the report may no longer be available.",
+                    uploadId: upload.Id,
+                    status: UploadStatus.Success);
+            }
 
             _logger.LogInformation(
-                "Upload {UploadId} processed successfully. Tokens: {Tokens}, Cost: €{Cost:F4}",
-                upload.Id, upload.TokenEstimate, upload.EstimatedCostEuro);
+                "Upload {UploadId} processed successfully. Tokens: {Tokens}, Cost: €{Cost:F4}, BattleDataNull: {BattleDataNull}",
+                upload.Id, upload.TokenEstimate, upload.EstimatedCostEuro, battleData == null);
 
             var updatedQuota = await _userService.GetRemainingQuotaAsync(userId);
 
@@ -136,7 +148,7 @@ public class UploadService : IUploadService
     /// <summary>
     /// Check if this image has already been processed
     /// </summary>
-    private async Task<UploadResponse?> CheckForDuplicateAsync(string imageHash, QuotaInfo quotaInfo)
+    private async Task<UploadResponse?> CheckForDuplicateAsync(string imageHash, QuotaInfo quotaInfo, string? discordUserId = null, string? discordServerId = null)
     {
         var existingUpload = await _context.Uploads
             .Include(u => u.BattleReport)
@@ -150,8 +162,24 @@ public class UploadService : IUploadService
         }
 
         _logger.LogInformation(
-            "Duplicate image detected. Returning existing battle report {BattleReportId}",
-            existingUpload.BattleReport.Id);
+            "Duplicate image detected. Returning existing battle report {BattleReportId}, DiscordUserId: {DiscordUserId}, DiscordServerId: {DiscordServerId}, UploadPrivacyScope: {PrivacyScope}",
+            existingUpload.BattleReport.Id, discordUserId ?? "null", discordServerId ?? "null", existingUpload.PrivacyScope);
+
+        var battleData = await _battleReportService.GetBattleReportByIdAsync(existingUpload.BattleReport.Id, discordUserId, discordServerId);
+
+        if (battleData == null)
+        {
+            _logger.LogWarning(
+                "Duplicate: BattleData is null after GetBattleReportByIdAsync. DiscordUserId: {DiscordUserId}, DiscordServerId: {DiscordServerId}, UploadPrivacyScope: {PrivacyScope}",
+                discordUserId ?? "null", discordServerId ?? "null", existingUpload.PrivacyScope);
+            return new UploadResponse
+            {
+                Success = false,
+                ErrorMessage = "Unable to retrieve battle data. This may be due to privacy restrictions.",
+                IsDuplicate = true,
+                RemainingQuota = quotaInfo
+            };
+        }
 
         return new UploadResponse
         {
@@ -159,7 +187,7 @@ public class UploadService : IUploadService
             UploadId = existingUpload.Id,
             Status = UploadStatus.Success,
             IsDuplicate = true,
-            BattleData = await _battleReportService.GetBattleReportByIdAsync(existingUpload.BattleReport.Id),
+            BattleData = battleData,
             RemainingQuota = quotaInfo // Quota not consumed for duplicates
         };
     }

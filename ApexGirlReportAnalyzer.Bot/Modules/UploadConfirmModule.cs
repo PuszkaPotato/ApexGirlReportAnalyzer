@@ -52,6 +52,7 @@ public class UploadConfirmModule : InteractionModuleBase<SocketInteractionContex
 
             var uploadResult = await _apiClient.UploadScreenshotAsync(
                 userId: data.UserId,
+                discordUserId: data.DiscordUserId,
                 discordServerId: data.DiscordServerId,
                 discordChannelId: data.DiscordChannelId,
                 discordMessageId: data.DiscordMessageId,
