@@ -7,6 +7,7 @@ using Discord.Interactions;
 namespace ApexGirlReportAnalyzer.Bot.Modules;
 
 [RequireApiHealthy]
+[RequireUserPermission(GuildPermission.Administrator)]
 [Group("setup", "Commands for setting up the bot in your server.")]
 public class SetupModule : InteractionModuleBase<SocketInteractionContext>
 {
