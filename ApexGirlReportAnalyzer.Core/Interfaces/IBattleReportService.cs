@@ -28,9 +28,11 @@ public interface IBattleReportService
         int limit = 10,
         int offset = 0,
         string? requestingDiscordUserId = null,
+        string? requestingDiscordServerId = null,
+        bool requestingHasAllowedRole = true,
         bool isDeveloper = false);
 
-    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, bool isDeveloper = false);
+    Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, string? requestingDiscordServerId = null, bool requestingHasAllowedRole = true, bool isDeveloper = false);
 
     Task<Guid> CreateBattleReportAsync(BattleReportResponse battleData, Guid uploadId, string? playerInGameId, string? enemyInGameId, int? playerTeamRank = null, int? enemyTeamRank = null, int? playerServer = null, int? enemyServer = null);
 

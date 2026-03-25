@@ -16,6 +16,8 @@ public class ReportsService
 
     public async Task<BattleReportListResponse?> GetReportsAsync(
         string requestingDiscordUserId,
+        string? requestingDiscordServerId = null,
+        bool requestingHasAllowedRole = false,
         Guid? userId = null,
         string? participant = null,
         string? battleType = null,
@@ -26,13 +28,13 @@ public class ReportsService
         int offset = 0)
     {
         _logger.LogInformation("Fetching battle reports — participant: {Participant}, limit: {Limit}", participant, limit);
-        return await _apiClient.GetBattleReportsAsync(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset, requestingDiscordUserId);
+        return await _apiClient.GetBattleReportsAsync(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset, requestingDiscordUserId, requestingDiscordServerId, requestingHasAllowedRole);
     }
 
-    public async Task<BattleReportResponse?> GetReportByIdAsync(Guid reportId, string requestingDiscordUserId)
+    public async Task<BattleReportResponse?> GetReportByIdAsync(Guid reportId, string requestingDiscordUserId, string? requestingDiscordServerId = null, bool requestingHasAllowedRole = false)
     {
         _logger.LogInformation("Fetching battle report {ReportId}", reportId);
-        return await _apiClient.GetBattleReportByIdAsync(reportId, requestingDiscordUserId);
+        return await _apiClient.GetBattleReportByIdAsync(reportId, requestingDiscordUserId, requestingDiscordServerId, requestingHasAllowedRole);
     }
 
     public async Task<Stream?> ExportReportsCsvAsync(

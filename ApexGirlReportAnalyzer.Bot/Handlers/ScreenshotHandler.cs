@@ -61,6 +61,16 @@ public class ScreenshotHandler
 
         if (message.Channel.Id.ToString() != server.UploadChannelId) return;
 
+        if (server.AllowedRoleId != null &&
+            message.Author is SocketGuildUser guildUser &&
+            ulong.TryParse(server.AllowedRoleId, out var allowedRoleId) &&
+            !guildUser.Roles.Any(r => r.Id == allowedRoleId))
+        {
+            if (message is IUserMessage restrictedMsg)
+                await restrictedMsg.ReplyAsync("You don't have the required role to upload reports on this server.");
+            return;
+        }
+
         var imageAttachments = message.Attachments
             .Where(a => a.ContentType != null && a.ContentType.StartsWith("image/"))
             .ToList();

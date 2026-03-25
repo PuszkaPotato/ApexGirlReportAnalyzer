@@ -159,6 +159,9 @@
 ### Deferred Tasks
 - **Tier assignment modal** (`TierModalModule.cs`) — deferred, low priority
 
+### TODO: Tech Debt / Review
+- **Bot helper methods audit** — check if repeated patterns in bot modules/services/handlers can be extracted into shared helpers (e.g. developer check, user resolution, embed building). Review before adding more commands.
+
 ### TODO: Planned Features
 - **Server join event** — when the bot is invited to a new server, send a welcome/setup message in the first available channel (or system channel)
 - **Developer Discord logging** — dedicated developer Discord server + channel where the bot logs important events:

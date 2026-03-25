@@ -33,6 +33,8 @@ public class BattleReportService : IBattleReportService
         int limit = 10,
         int offset = 0,
         string? requestingDiscordUserId = null,
+        string? requestingDiscordServerId = null,
+        bool requestingHasAllowedRole = true,
         bool isDeveloper = false)
     {
         var query = _context.BattleReports
@@ -45,7 +47,8 @@ public class BattleReportService : IBattleReportService
         {
             query = query.Where(br =>
                 br.Upload.PrivacyScope == PrivacyScope.Public ||
-                (requestingDiscordUserId != null && br.Upload.User.DiscordId == requestingDiscordUserId));
+                (br.Upload.PrivacyScope == PrivacyScope.UserOnly && requestingDiscordUserId != null && br.Upload.User.DiscordId == requestingDiscordUserId) ||
+                (br.Upload.PrivacyScope == PrivacyScope.ServerOnly && requestingDiscordServerId != null && br.Upload.DiscordServerId == requestingDiscordServerId && requestingHasAllowedRole));
         }
 
         if (uploadId.HasValue)
@@ -77,7 +80,7 @@ public class BattleReportService : IBattleReportService
         return (mappedReports, totalCount);
     }
 
-    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, bool isDeveloper = false)
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, string? requestingDiscordServerId = null, bool requestingHasAllowedRole = true, bool isDeveloper = false)
     {
         var report = await _context.BattleReports
             .Include(br => br.BattleSides)
@@ -90,8 +93,15 @@ public class BattleReportService : IBattleReportService
 
         if (!isDeveloper)
         {
-            var isOwner = requestingDiscordUserId != null && report.Upload.User.DiscordId == requestingDiscordUserId;
-            if (report.Upload.PrivacyScope != PrivacyScope.Public && !isOwner)
+            var isAllowed = report.Upload.PrivacyScope switch
+            {
+                PrivacyScope.Public => true,
+                PrivacyScope.UserOnly => requestingDiscordUserId != null && report.Upload.User.DiscordId == requestingDiscordUserId,
+                PrivacyScope.ServerOnly => requestingDiscordServerId != null && report.Upload.DiscordServerId == requestingDiscordServerId && requestingHasAllowedRole,
+                _ => false
+            };
+
+            if (!isAllowed)
                 return null;
         }
 

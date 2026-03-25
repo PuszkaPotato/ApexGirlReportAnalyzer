@@ -40,6 +40,8 @@ public class BattleReportController : ControllerBase
     /// <param name="limit">Maximum number of reports to return (default 10)</param>
     /// <param name="offset">Number of reports to skip for pagination (default 0)</param>
     /// <param name="requestingDiscordUserId">Optional: Discord user ID of the requester for privacy filtering.</param>
+    /// <param name="requestingDiscordServerId">Optional: Discord server ID of the requester for ServerOnly privacy filtering.</param>
+    /// <param name="requestingHasAllowedRole">Whether the requester has the server's allowed role (for ServerOnly reports).</param>
     [HttpGet]
     public async Task<IActionResult> GetBattleReports(
         [FromQuery] Guid? uploadId = null,
@@ -51,12 +53,14 @@ public class BattleReportController : ControllerBase
         [FromQuery] string? groupTag = null,
         [FromQuery] int limit = 10,
         [FromQuery] int offset = 0,
-        [FromQuery] string? requestingDiscordUserId = null)
+        [FromQuery] string? requestingDiscordUserId = null,
+        [FromQuery] string? requestingDiscordServerId = null,
+        [FromQuery] bool requestingHasAllowedRole = false)
     {
         var developerDiscordId = _configuration["App:DeveloperDiscordId"];
         var isDeveloper = !string.IsNullOrEmpty(developerDiscordId) && requestingDiscordUserId == developerDiscordId;
 
-        var (reports, totalCount) = await _battleReportService.GetBattleReportAsync(uploadId, battleDate, battleType, userId, participant, inGameId, groupTag, limit, offset, requestingDiscordUserId, isDeveloper);
+        var (reports, totalCount) = await _battleReportService.GetBattleReportAsync(uploadId, battleDate, battleType, userId, participant, inGameId, groupTag, limit, offset, requestingDiscordUserId, requestingDiscordServerId, requestingHasAllowedRole, isDeveloper);
 
         var response = new BattleReportListResponse
         {
@@ -105,13 +109,15 @@ public class BattleReportController : ControllerBase
     /// </summary>
     /// <param name="reportId">The ID of the battle report to retrieve.</param>
     /// <param name="requestingDiscordUserId">Optional: Discord user ID of the requester for privacy filtering.</param>
+    /// <param name="requestingDiscordServerId">Optional: Discord server ID of the requester for ServerOnly privacy filtering.</param>
+    /// <param name="requestingHasAllowedRole">Whether the requester has the server's allowed role (for ServerOnly reports).</param>
     [HttpGet("reportId")]
-    public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId, [FromQuery] string? requestingDiscordUserId = null)
+    public async Task<IActionResult> GetBattleReportById([FromQuery] Guid reportId, [FromQuery] string? requestingDiscordUserId = null, [FromQuery] string? requestingDiscordServerId = null, [FromQuery] bool requestingHasAllowedRole = false)
     {
         var developerDiscordId = _configuration["App:DeveloperDiscordId"];
         var isDeveloper = !string.IsNullOrEmpty(developerDiscordId) && requestingDiscordUserId == developerDiscordId;
 
-        var report = await _battleReportService.GetBattleReportByIdAsync(reportId, requestingDiscordUserId, isDeveloper);
+        var report = await _battleReportService.GetBattleReportByIdAsync(reportId, requestingDiscordUserId, requestingDiscordServerId, requestingHasAllowedRole, isDeveloper);
         if (report == null)
             return NotFound(new ErrorResponse { Message = $"No battle report found with ID: {reportId}", Type = "NotFound" });
         return Ok(report);

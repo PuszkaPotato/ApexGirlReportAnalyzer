@@ -146,9 +146,11 @@ public class ApiClient
         int limit = 10,
         int offset = 0,
         string? requestingDiscordUserId = null,
+        string? requestingDiscordServerId = null,
+        bool requestingHasAllowedRole = false,
         CancellationToken cancellationToken = default)
     {
-        var query = BuildReportsQueryString(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset, requestingDiscordUserId);
+        var query = BuildReportsQueryString(userId, participant, battleType, groupTag, inGameId, battleDate, limit, offset, requestingDiscordUserId, requestingDiscordServerId, requestingHasAllowedRole);
         _logger.LogDebug("Querying battle reports: {Query}", query);
 
         var response = await _httpClient.GetAsync($"api/battlereport?{query}", cancellationToken);
@@ -189,13 +191,16 @@ public class ApiClient
     /// <summary>
     /// Gets a single battle report by its ID.
     /// </summary>
-    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, CancellationToken cancellationToken = default)
+    public async Task<BattleReportResponse?> GetBattleReportByIdAsync(Guid reportId, string? requestingDiscordUserId = null, string? requestingDiscordServerId = null, bool requestingHasAllowedRole = false, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Getting battle report {ReportId}", reportId);
 
         var url = $"api/battlereport/reportId?reportId={reportId}";
         if (requestingDiscordUserId != null)
             url += $"&requestingDiscordUserId={Uri.EscapeDataString(requestingDiscordUserId)}";
+        if (requestingDiscordServerId != null)
+            url += $"&requestingDiscordServerId={Uri.EscapeDataString(requestingDiscordServerId)}";
+        url += $"&requestingHasAllowedRole={requestingHasAllowedRole}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
 
@@ -272,7 +277,7 @@ public class ApiClient
         return JsonSerializer.Deserialize<T>(json, JsonOptions);
     }
 
-    private static string BuildReportsQueryString(Guid? userId, string? participant, string? battleType, string? groupTag, string? inGameId, DateTime? battleDate, int limit, int offset, string? requestingDiscordUserId = null)
+    private static string BuildReportsQueryString(Guid? userId, string? participant, string? battleType, string? groupTag, string? inGameId, DateTime? battleDate, int limit, int offset, string? requestingDiscordUserId = null, string? requestingDiscordServerId = null, bool requestingHasAllowedRole = false)
     {
         var parts = new List<string>();
 
@@ -290,7 +295,10 @@ public class ApiClient
             parts.Add($"battleDate={battleDate.Value:yyyy-MM-dd}");
         if (requestingDiscordUserId != null)
             parts.Add($"requestingDiscordUserId={Uri.EscapeDataString(requestingDiscordUserId)}");
+        if (requestingDiscordServerId != null)
+            parts.Add($"requestingDiscordServerId={Uri.EscapeDataString(requestingDiscordServerId)}");
 
+        parts.Add($"requestingHasAllowedRole={requestingHasAllowedRole}");
         parts.Add($"limit={limit}");
         parts.Add($"offset={offset}");
 

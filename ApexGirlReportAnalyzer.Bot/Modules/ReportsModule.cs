@@ -8,6 +8,7 @@ using Discord.Interactions;
 namespace ApexGirlReportAnalyzer.Bot.Modules;
 
 [RequireApiHealthy]
+[RequireAllowedRole]
 public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ReportsService _reportsService;
@@ -34,7 +35,7 @@ public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
         if (battleDate != null && DateTime.TryParse(battleDate, out var d))
             parsedDate = d;
 
-        var result = await _reportsService.GetReportsAsync(Context.User.Id.ToString(), participant: participant, battleType: battleType, groupTag: groupTag, inGameId: inGameId, battleDate: parsedDate, limit: limit);
+        var result = await _reportsService.GetReportsAsync(Context.User.Id.ToString(), Context.Guild?.Id.ToString(), requestingHasAllowedRole: true, participant: participant, battleType: battleType, groupTag: groupTag, inGameId: inGameId, battleDate: parsedDate, limit: limit);
 
         if (result == null || result.BattleReports.Count == 0)
         {
@@ -99,7 +100,7 @@ public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var report = await _reportsService.GetReportByIdAsync(guid, Context.User.Id.ToString());
+        var report = await _reportsService.GetReportByIdAsync(guid, Context.User.Id.ToString(), Context.Guild?.Id.ToString(), requestingHasAllowedRole: true);
 
         if (report == null)
         {
