@@ -71,8 +71,9 @@ public class ScreenshotHandler
             return;
         }
 
+        var validImageTypes = new[] { "image/jpeg", "image/png" };
         var imageAttachments = message.Attachments
-            .Where(a => a.ContentType != null && a.ContentType.StartsWith("image/"))
+            .Where(a => a.ContentType is not null && validImageTypes.Any(t => a.ContentType.StartsWith(t)))
             .ToList();
 
         if (imageAttachments.Count == 0) return;
