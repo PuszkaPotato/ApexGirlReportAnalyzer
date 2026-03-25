@@ -26,7 +26,7 @@ public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
         [Summary("battle-date", "Filter by battle date (yyyy-MM-dd)")] string? battleDate = null,
         [Summary("limit", "Number of reports to show (max 10)")] int limit = 10)
     {
-        await DeferAsync();
+        await DeferAsync(ephemeral: true);
 
         limit = Math.Clamp(limit, 1, 10);
 
@@ -38,7 +38,7 @@ public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
 
         if (result == null || result.BattleReports.Count == 0)
         {
-            await FollowupAsync("No battle reports found.");
+            await FollowupAsync("No battle reports found.", ephemeral: true);
             return;
         }
 
@@ -61,7 +61,7 @@ public class ReportsModule : InteractionModuleBase<SocketInteractionContext>
 
         var components = BuildReportButtons(result.BattleReports);
 
-        await FollowupAsync(embed: embed.Build(), components: components.Build());
+        await FollowupAsync(embed: embed.Build(), components: components.Build(), ephemeral: true);
     }
 
     [SlashCommand("export", "Export battle reports as a CSV file.")]

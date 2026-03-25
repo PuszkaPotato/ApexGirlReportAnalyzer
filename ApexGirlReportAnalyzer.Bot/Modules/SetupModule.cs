@@ -30,9 +30,9 @@ public class SetupModule : InteractionModuleBase<SocketInteractionContext>
         var result = await _setupService.SetServerConfigAsync(Context.Guild.Id.ToString(), Context.Guild.OwnerId.ToString(), uploadChannel.Id.ToString(), logChannel?.Id.ToString(), allowedRole?.Id.ToString(), privacyScope);
 
         if (result == null)
-            await RespondAsync("Something went wrong, please try again.");
+            await RespondAsync("Something went wrong, please try again.", ephemeral: true);
         else
-            await RespondAsync("Server configured successfully!");
+            await RespondAsync("Server configured successfully!", ephemeral: true);
     }
 
     [SlashCommand("view", "View the current bot configuration for this server.")]
@@ -55,7 +55,7 @@ public class SetupModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Default Privacy", config.DefaultReportPrivacy.ToString(), inline: true)
             .Build();
 
-        await RespondAsync(embed: embed);
+        await RespondAsync(embed: embed, ephemeral: true);
     }
 
     [SlashCommand("update", "Update the bot configuration for this server.")]
@@ -74,8 +74,8 @@ public class SetupModule : InteractionModuleBase<SocketInteractionContext>
             privacyScope);
 
         if (result == null)
-            await RespondAsync("Could not update configuration. Has this server been set up with `/setup init` yet?");
+            await RespondAsync("Could not update configuration. Has this server been set up with `/setup init` yet?", ephemeral: true);
         else
-            await RespondAsync("Configuration updated successfully!");
+            await RespondAsync("Configuration updated successfully!", ephemeral: true);
     }
 }
