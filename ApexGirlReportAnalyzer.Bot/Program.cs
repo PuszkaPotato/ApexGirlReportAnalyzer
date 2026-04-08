@@ -1,6 +1,7 @@
 using ApexGirlReportAnalyzer.Bot.Configuration;
 using ApexGirlReportAnalyzer.Bot.Handlers;
 using ApexGirlReportAnalyzer.Bot.Http;
+using ApexGirlReportAnalyzer.Bot.Modules;
 using ApexGirlReportAnalyzer.Bot.Services;
 using Discord;
 using Discord.Interactions;
@@ -28,6 +29,7 @@ builder.Services.AddSingleton<ApiHealthService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ApiHealthService>());
 
 builder.Services.AddHttpClient<ScreenshotHandler>();
+builder.Services.AddHttpClient<RecheckModule>();
 
 builder.Services.AddHttpClient<ApiClient>((serviceProvider, client) =>
 {

@@ -103,7 +103,24 @@ public class ApiClient
 
         var response = await _httpClient.PostAsync("api/upload", content, cancellationToken);
 
-        return await DeserializeResponseAsync<UploadResponse>(response, nameof(UploadScreenshotAsync));
+        // Always deserialize upload responses — even 4xx — so the bot can show the actual error message
+        // (e.g. "Not a battle report") instead of "Could not reach the analysis service"
+        var json = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(json))
+        {
+            _logger.LogWarning("{Operation} returned empty body with status {StatusCode}", nameof(UploadScreenshotAsync), response.StatusCode);
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<UploadResponse>(json, JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "{Operation} failed to deserialize response (status {StatusCode})", nameof(UploadScreenshotAsync), response.StatusCode);
+            return null;
+        }
     }
 
     /// <summary>

@@ -128,6 +128,7 @@ public class UploadController : ControllerBase
     /// <param name="images">Screenshot image files (PNG or JPEG, max 20)</param>
     /// <param name="userId">User ID making the upload</param>
     /// <param name="discordServerId">Optional: Discord server ID if uploaded via bot</param>
+    /// <param name="discordUserId">Optional: Discord user ID of the uploader</param>
     /// <param name="privacyScope">Optional: Privacy scope for all reports in the batch (default: Public)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Batch analysis results or error</returns>

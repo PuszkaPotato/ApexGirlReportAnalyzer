@@ -191,7 +191,7 @@ public class ScreenshotHandler
         if (!result.Success)
             return new EmbedBuilder()
                 .WithTitle("Upload Failed")
-                .WithDescription("An unexpected error occurred.")
+                .WithDescription(result.ErrorMessage ?? "An unexpected error occurred.")
                 .WithColor(Color.Red);
 
         var color = result.IsDuplicate ? Color.Orange : Color.Default;
